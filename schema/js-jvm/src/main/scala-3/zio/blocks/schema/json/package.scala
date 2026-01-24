@@ -213,7 +213,7 @@ package object json {
     checkHasJsonEncoderForType(tpe, context)
   }
 
-  private def checkHasJsonEncoderForType(tpe: quotes.reflect.TypeRepr, context: String)(using Quotes): Unit = {
+  private def checkHasJsonEncoderForType(using Quotes)(tpe: quotes.reflect.TypeRepr, context: String): Unit = {
     import quotes.reflect._
 
     // Json itself is always allowed
