@@ -15,9 +15,26 @@ object JsonInterpolatorRuntime {
     val out    = new ByteArrayOutputStream(parts.head.length << 1)
     out.write(parts.head)
     
+    // Track whether we're inside a string literal across multiple interpolations
+    var inStringLiteral = isInStringLiteral(parts.head)
+    
     var i = 0
     while (i < args.length) {
-      val context = detectContext(parts(i), if (i + 1 < parts.length) parts(i + 1) else "")
+      val context = if (inStringLiteral) {
+        Context.StringLiteral
+      } else {
+        val after = if (i + 1 < parts.length) parts(i + 1) else ""
+        // Build the text so far for accurate context detection
+        val beforeUpToNow = new java.lang.StringBuilder()
+        var j = 0
+        while (j <= i) {
+          beforeUpToNow.append(parts(j))
+          if (j < i) beforeUpToNow.append("x") // placeholder for previous args
+          j += 1
+        }
+        detectContextFromBeforeAfter(beforeUpToNow.toString, after)
+      }
+      
       context match {
         case Context.Key =>
           writeKeyOnly(out, args(i))
@@ -26,7 +43,19 @@ object JsonInterpolatorRuntime {
         case Context.Value =>
           writeValue(out, args(i))
       }
-      out.write(parts(i + 1))
+      
+      val nextPart = parts(i + 1)
+      out.write(nextPart)
+      
+      // Update string literal tracking
+      if (inStringLiteral) {
+        // We were in a string, check if this part closes it
+        inStringLiteral = isInStringLiteral(nextPart) != inStringLiteral
+      } else {
+        // We weren't in a string, check if this part opens one
+        inStringLiteral = isInStringLiteral(nextPart)
+      }
+      
       i += 1
     }
     
@@ -43,7 +72,7 @@ object JsonInterpolatorRuntime {
     case object StringLiteral extends Context
   }
 
-  private def detectContext(before: String, after: String): Context = {
+  private def detectContextFromBeforeAfter(before: String, after: String): Context = {
     // Check if we're inside a string literal (odd number of unescaped quotes before)
     if (isInStringLiteral(before)) {
       Context.StringLiteral
@@ -88,8 +117,42 @@ object JsonInterpolatorRuntime {
     (trimmedBefore.endsWith("{") || trimmedBefore.endsWith(",")) && trimmedAfter.startsWith(":")
   }
 
+  /**
+   * Writes a value into an existing JSON string literal, escaping according to
+   * JSON string rules but without adding surrounding quotes (the literal already
+   * provides them).
+   */
+  private def writeJsonEscapedString(out: ByteArrayOutputStream, s: String): Unit = {
+    val sb = new java.lang.StringBuilder(s.length + 16)
+    var i  = 0
+    while (i < s.length) {
+      s.charAt(i) match {
+        case '"'  => sb.append("\\\"")
+        case '\\' => sb.append("\\\\")
+        case '\b' => sb.append("\\b")
+        case '\f' => sb.append("\\f")
+        case '\n' => sb.append("\\n")
+        case '\r' => sb.append("\\r")
+        case '\t' => sb.append("\\t")
+        case c if c < ' ' =>
+          val hex = Integer.toHexString(c.toInt)
+          sb.append("\\u")
+          var j = hex.length
+          while (j < 4) {
+            sb.append('0')
+            j += 1
+          }
+          sb.append(hex)
+        case c =>
+          sb.append(c)
+      }
+      i += 1
+    }
+    out.write(sb.toString)
+  }
+
   private def writeStringLiteralValue(out: ByteArrayOutputStream, value: Any): Unit = value match {
-    case s: String     => out.write(s) // Already inside quotes, write raw string
+    case s: String     => writeJsonEscapedString(out, s) // Escape JSON special chars
     case b: Boolean    => out.write(b.toString)
     case b: Byte       => out.write(b.toString)
     case sh: Short     => out.write(sh.toString)

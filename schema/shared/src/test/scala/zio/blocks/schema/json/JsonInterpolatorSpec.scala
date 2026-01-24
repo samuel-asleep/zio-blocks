@@ -522,7 +522,7 @@ object JsonInterpolatorSpec extends SchemaBaseSpec {
         json"""{"info": "Count: $count"}""".get("info").string == Right("Count: 10")
       )
     },
-    test("supports List values with JsonEncoder") {
+    test("supports List values (special runtime handling)") {
       val numbers = List(1, 2, 3)
       assertTrue(
         json"""{"nums": $numbers}""".get("nums").one == Right(Json.arr(Json.number(1), Json.number(2), Json.number(3)))
@@ -619,6 +619,37 @@ object JsonInterpolatorSpec extends SchemaBaseSpec {
         assertTrue(
           json"""{"url": "http://example.com/$path"}""".get("url").string == 
             Right("http://example.com/foo/bar")
+        )
+      },
+      
+      test("handles multiple interpolations in same string literal") {
+        val first = "Hello"
+        val second = "World"
+        
+        assertTrue(
+          json"""{"msg": "$first $second!"}""".get("msg").string == Right("Hello World!")
+        )
+      },
+      
+      test("escapes JSON special characters in string literals") {
+        val withQuotes = """He said "hello""""
+        val withBackslash = """path\to\file"""
+        val withNewline = "line1\nline2"
+        val withTab = "col1\tcol2"
+        
+        assertTrue(
+          json"""{"quoted": "$withQuotes"}""".get("quoted").string == Right("""He said "hello""""),
+          json"""{"backslash": "$withBackslash"}""".get("backslash").string == Right("""path\to\file"""),
+          json"""{"newline": "$withNewline"}""".get("newline").string == Right("line1\nline2"),
+          json"""{"tab": "$withTab"}""".get("tab").string == Right("col1\tcol2")
+        )
+      },
+      
+      test("handles control characters in string literals") {
+        val withControl = "test\u0001\u001fend"
+        
+        assertTrue(
+          json"""{"control": "$withControl"}""".get("control").string == Right("test\u0001\u001fend")
         )
       }
     ),

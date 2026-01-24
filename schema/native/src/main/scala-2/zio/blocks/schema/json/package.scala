@@ -71,8 +71,18 @@ private object JsonInterpolatorMacros {
     var i = 0
     while (i < text.length) {
       val c = text.charAt(i)
-      if (c == '"' && (i == 0 || text.charAt(i - 1) != '\\')) {
-        inQuote = !inQuote
+      if (c == '"') {
+        // Count consecutive backslashes before this quote
+        var backslashCount = 0
+        var j = i - 1
+        while (j >= 0 && text.charAt(j) == '\\') {
+          backslashCount += 1
+          j -= 1
+        }
+        // If there's an even number of backslashes (including 0), the quote is not escaped
+        if (backslashCount % 2 == 0) {
+          inQuote = !inQuote
+        }
       }
       i += 1
     }
