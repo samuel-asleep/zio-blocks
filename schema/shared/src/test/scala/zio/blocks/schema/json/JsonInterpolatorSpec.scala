@@ -700,8 +700,9 @@ object JsonInterpolatorSpec extends SchemaBaseSpec {
         case class SimpleData(value: Int) {
           override def toString: String = s"""{"value":$value}"""
         }
-        implicit val simpleDataSchema: Schema[SimpleData] = Schema.derived
-        val _ = simpleDataSchema // Ensure schema is in scope for JsonEncoder derivation
+        object SimpleData {
+          implicit val schema: Schema[SimpleData] = Schema.derived
+        }
 
         val data   = SimpleData(42)
         val result = json"""{"data": $data}"""
