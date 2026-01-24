@@ -63,8 +63,18 @@ object JsonInterpolatorRuntime {
     var i = 0
     while (i < text.length) {
       val c = text.charAt(i)
-      if (c == '"' && (i == 0 || text.charAt(i - 1) != '\\')) {
-        inQuote = !inQuote
+      if (c == '"') {
+        // Count consecutive backslashes before this quote
+        var backslashCount = 0
+        var j = i - 1
+        while (j >= 0 && text.charAt(j) == '\\') {
+          backslashCount += 1
+          j -= 1
+        }
+        // If there's an even number of backslashes (including 0), the quote is not escaped
+        if (backslashCount % 2 == 0) {
+          inQuote = !inQuote
+        }
       }
       i += 1
     }
@@ -223,23 +233,21 @@ object JsonInterpolatorRuntime {
     case j: Json                         => Json.jsonCodec.encode(j, out)
     case map: scala.collection.Map[_, _] =>
       out.write('{')
-      map.foreach {
-        var comma = false
-        kv =>
-          if (comma) out.write(',')
-          else comma = true
-          writeKey(out, kv._1)
-          writeValue(out, kv._2)
+      var comma = false
+      map.foreach { kv =>
+        if (comma) out.write(',')
+        else comma = true
+        writeKey(out, kv._1)
+        writeValue(out, kv._2)
       }
       out.write('}')
     case seq: Iterable[_] =>
       out.write('[')
-      seq.foreach {
-        var comma = false
-        x =>
-          if (comma) out.write(',')
-          else comma = true
-          writeValue(out, x)
+      var comma = false
+      seq.foreach { x =>
+        if (comma) out.write(',')
+        else comma = true
+        writeValue(out, x)
       }
       out.write(']')
     case arr: Array[_] =>
