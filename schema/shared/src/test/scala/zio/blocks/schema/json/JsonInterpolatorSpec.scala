@@ -512,6 +512,16 @@ object JsonInterpolatorSpec extends SchemaBaseSpec {
         json"""{${x.toString}: "v"}""".get(x.toString).string == Right("v")
       )
     },
+    test("supports interpolation inside string literals with stringable types") {
+      val name = "Alice"
+      val age = 42
+      val count = 10
+      assertTrue(
+        json"""{"greeting": "Hello, $name!"}""".get("greeting").string == Right("Hello, Alice!"),
+        json"""{"msg": "Age is $age years"}""".get("msg").string == Right("Age is 42 years"),
+        json"""{"info": "Count: $count"}""".get("info").string == Right("Count: 10")
+      )
+    },
     test("supports custom types with JsonEncoder in value positions") {
       case class Person(name: String, age: Int)
       

@@ -18,9 +18,17 @@ package object json {
       case _ => report.errorAndAbort("Expected a StringContext with string literal parts")
     }
     
-    // Validate JSON syntax first
+    // Validate JSON syntax with placeholder values
     try {
-      JsonInterpolatorRuntime.jsonWithInterpolation(new StringContext(parts: _*), (2 to parts.size).map(_ => ""))
+      val placeholders = (0 until parts.length - 1).map { i =>
+        val context = detectInterpolationContext(parts, i)
+        context match {
+          case InterpolationContext.Key => "x"
+          case InterpolationContext.Value => "null"
+          case InterpolationContext.StringLiteral => "x"
+        }
+      }
+      JsonInterpolatorRuntime.jsonWithInterpolation(new StringContext(parts: _*), placeholders)
     } catch {
       case error if NonFatal(error) => report.errorAndAbort(s"Invalid JSON literal: ${error.getMessage}")
     }

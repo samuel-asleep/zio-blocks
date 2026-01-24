@@ -24,9 +24,17 @@ private object JsonInterpolatorMacros {
       case _ => c.abort(c.enclosingPosition, "Expected StringContext")
     }
     
-    // Validate JSON syntax first
+    // Validate JSON syntax with placeholder values
     try {
-      JsonInterpolatorRuntime.jsonWithInterpolation(new StringContext(parts: _*), (2 to parts.size).map(_ => ""))
+      val placeholders = (0 until parts.length - 1).map { i =>
+        val context = detectInterpolationContext(parts, i)
+        context match {
+          case InterpolationContext.Key => "x"
+          case InterpolationContext.Value => "null"
+          case InterpolationContext.StringLiteral => "x"
+        }
+      }
+      JsonInterpolatorRuntime.jsonWithInterpolation(new StringContext(parts: _*), placeholders)
     } catch {
       case error if NonFatal(error) => c.abort(c.enclosingPosition, s"Invalid JSON literal: ${error.getMessage}")
     }

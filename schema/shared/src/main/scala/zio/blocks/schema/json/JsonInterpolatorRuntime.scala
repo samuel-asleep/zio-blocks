@@ -11,19 +11,166 @@ import scala.annotation.tailrec
  */
 object JsonInterpolatorRuntime {
   def jsonWithInterpolation(sc: StringContext, args: Seq[Any]): Json = {
-    val parts  = sc.parts.iterator
-    val argsIt = args.iterator
-    val str    = parts.next()
-    val out    = new ByteArrayOutputStream(str.length << 1)
-    out.write(str)
-    while (argsIt.hasNext) {
-      writeValue(out, argsIt.next())
-      out.write(parts.next())
+    val parts  = sc.parts
+    val out    = new ByteArrayOutputStream(parts.head.length << 1)
+    out.write(parts.head)
+    
+    var i = 0
+    while (i < args.length) {
+      val context = detectContext(parts(i), if (i + 1 < parts.length) parts(i + 1) else "")
+      context match {
+        case Context.Key =>
+          writeKeyOnly(out, args(i))
+        case Context.StringLiteral =>
+          writeStringLiteralValue(out, args(i))
+        case Context.Value =>
+          writeValue(out, args(i))
+      }
+      out.write(parts(i + 1))
+      i += 1
     }
+    
     Json.jsonCodec.decode(out.toByteArray) match {
       case Right(json) => json
       case Left(error) => throw error
     }
+  }
+
+  private sealed trait Context
+  private object Context {
+    case object Key extends Context
+    case object Value extends Context
+    case object StringLiteral extends Context
+  }
+
+  private def detectContext(before: String, after: String): Context = {
+    // Check if we're inside a string literal (odd number of unescaped quotes before)
+    if (isInStringLiteral(before)) {
+      Context.StringLiteral
+    }
+    // Check if this is a key position (after '{' or ',' and before ':')
+    else if (isKeyPosition(before, after)) {
+      Context.Key
+    }
+    // Otherwise it's a value position
+    else {
+      Context.Value
+    }
+  }
+
+  private def isInStringLiteral(text: String): Boolean = {
+    var inQuote = false
+    var i = 0
+    while (i < text.length) {
+      val c = text.charAt(i)
+      if (c == '"' && (i == 0 || text.charAt(i - 1) != '\\')) {
+        inQuote = !inQuote
+      }
+      i += 1
+    }
+    inQuote
+  }
+
+  private def isKeyPosition(before: String, after: String): Boolean = {
+    val trimmedBefore = before.reverse.dropWhile(c => c.isWhitespace).reverse
+    val trimmedAfter = after.dropWhile(c => c.isWhitespace)
+    
+    (trimmedBefore.endsWith("{") || trimmedBefore.endsWith(",")) && trimmedAfter.startsWith(":")
+  }
+
+  private def writeStringLiteralValue(out: ByteArrayOutputStream, value: Any): Unit = value match {
+    case s: String     => out.write(s) // Already inside quotes, write raw string
+    case b: Boolean    => out.write(b.toString)
+    case b: Byte       => out.write(b.toString)
+    case sh: Short     => out.write(sh.toString)
+    case i: Int        => out.write(i.toString)
+    case l: Long       => out.write(l.toString)
+    case f: Float      => out.write(JsonBinaryCodec.floatCodec.encodeToString(f))
+    case d: Double     => out.write(JsonBinaryCodec.doubleCodec.encodeToString(d))
+    case c: Char       => out.write(c.toString)
+    case bd: BigDecimal => out.write(bd.toString)
+    case bi: BigInt    => out.write(bi.toString)
+    case dow: DayOfWeek => out.write(dow.toString)
+    case d: Duration    => out.write(d.toString)
+    case i: Instant     => out.write(i.toString)
+    case ld: LocalDate  => out.write(ld.toString)
+    case ldt: LocalDateTime => out.write(ldt.toString)
+    case lt: LocalTime  => out.write(lt.toString)
+    case m: Month       => out.write(m.toString)
+    case md: MonthDay   => out.write(md.toString)
+    case odt: OffsetDateTime => out.write(odt.toString)
+    case ot: OffsetTime => out.write(ot.toString)
+    case p: Period      => out.write(p.toString)
+    case y: Year        => out.write(y.toString)
+    case ym: YearMonth  => out.write(ym.toString)
+    case zo: ZoneOffset => out.write(zo.toString)
+    case zi: ZoneId     => out.write(zi.toString)
+    case zdt: ZonedDateTime => out.write(zdt.toString)
+    case c: Currency    => out.write(c.toString)
+    case uuid: UUID     => out.write(uuid.toString)
+    case x              => out.write(x.toString)
+  }
+
+  private def writeKeyOnly(out: ByteArrayOutputStream, key: Any): Unit = {
+    key match {
+      case s: String  => JsonBinaryCodec.stringCodec.encode(s, out)
+      case b: Boolean =>
+        out.write('"')
+        JsonBinaryCodec.booleanCodec.encode(b, out)
+        out.write('"')
+      case b: Byte =>
+        out.write('"')
+        JsonBinaryCodec.byteCodec.encode(b, out)
+        out.write('"')
+      case sh: Short =>
+        out.write('"')
+        JsonBinaryCodec.shortCodec.encode(sh, out)
+        out.write('"')
+      case i: Int =>
+        out.write('"')
+        JsonBinaryCodec.intCodec.encode(i, out)
+        out.write('"')
+      case l: Long =>
+        out.write('"')
+        JsonBinaryCodec.longCodec.encode(l, out)
+        out.write('"')
+      case f: Float =>
+        out.write('"')
+        JsonBinaryCodec.floatCodec.encode(f, out)
+        out.write('"')
+      case d: Double =>
+        out.write('"')
+        JsonBinaryCodec.doubleCodec.encode(d, out)
+        out.write('"')
+      case bd: BigDecimal =>
+        out.write('"')
+        JsonBinaryCodec.bigDecimalCodec.encode(bd, out)
+        out.write('"')
+      case bi: BigInt =>
+        out.write('"')
+        JsonBinaryCodec.bigIntCodec.encode(bi, out)
+        out.write('"')
+      case d: Duration         => JsonBinaryCodec.durationCodec.encode(d, out)
+      case dow: DayOfWeek      => JsonBinaryCodec.dayOfWeekCodec.encode(dow, out)
+      case i: Instant          => JsonBinaryCodec.instantCodec.encode(i, out)
+      case ld: LocalDate       => JsonBinaryCodec.localDateCodec.encode(ld, out)
+      case ldt: LocalDateTime  => JsonBinaryCodec.localDateTimeCodec.encode(ldt, out)
+      case lt: LocalTime       => JsonBinaryCodec.localTimeCodec.encode(lt, out)
+      case m: Month            => JsonBinaryCodec.monthCodec.encode(m, out)
+      case md: MonthDay        => JsonBinaryCodec.monthDayCodec.encode(md, out)
+      case odt: OffsetDateTime => JsonBinaryCodec.offsetDateTimeCodec.encode(odt, out)
+      case ot: OffsetTime      => JsonBinaryCodec.offsetTimeCodec.encode(ot, out)
+      case p: Period           => JsonBinaryCodec.periodCodec.encode(p, out)
+      case y: Year             => JsonBinaryCodec.yearCodec.encode(y, out)
+      case ym: YearMonth       => JsonBinaryCodec.yearMonthCodec.encode(ym, out)
+      case zo: ZoneOffset      => JsonBinaryCodec.zoneOffsetCodec.encode(zo, out)
+      case zi: ZoneId          => JsonBinaryCodec.zoneIdCodec.encode(zi, out)
+      case zdt: ZonedDateTime  => JsonBinaryCodec.zonedDateTimeCodec.encode(zdt, out)
+      case c: Currency         => JsonBinaryCodec.currencyCodec.encode(c, out)
+      case uuid: UUID          => JsonBinaryCodec.uuidCodec.encode(uuid, out)
+      case x                   => JsonBinaryCodec.stringCodec.encode(x.toString, out)
+    }
+    // Don't write colon - it's in the next part
   }
 
   private[this] def writeValue(out: ByteArrayOutputStream, value: Any): Unit = value match {
