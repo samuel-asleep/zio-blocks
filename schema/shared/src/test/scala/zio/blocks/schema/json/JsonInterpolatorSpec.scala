@@ -626,8 +626,8 @@ object JsonInterpolatorSpec extends SchemaBaseSpec {
     // Mixed context tests
     suite("mixed interpolation contexts")(
       test("combines key and string interpolation") {
-        val key = java.util.UUID.randomUUID()
-        val timestamp = Instant.now()
+        val key = java.util.UUID.fromString("550e8400-e29b-41d4-a716-446655440000")
+        val timestamp = Instant.parse("2024-01-15T10:30:00Z")
         
         val result = json"""{
           $key: {
@@ -636,13 +636,13 @@ object JsonInterpolatorSpec extends SchemaBaseSpec {
         }"""
         
         assertTrue(
-          result.get(key.toString).get("note").string == Right(s"Recorded at $timestamp")
+          result.get(key.toString).get("note").string == Right("Recorded at 2024-01-15T10:30:00Z")
         )
       },
       
       test("multiple keys with different stringable types") {
         val intKey = 1
-        val uuidKey = java.util.UUID.randomUUID()
+        val uuidKey = java.util.UUID.fromString("123e4567-e89b-12d3-a456-426614174000")
         val dateKey = LocalDate.of(2024, 1, 15)
         
         val result = json"""{
