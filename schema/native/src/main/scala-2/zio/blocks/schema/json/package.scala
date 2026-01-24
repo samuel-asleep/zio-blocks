@@ -139,6 +139,20 @@ private object JsonInterpolatorMacros {
     import c.universe._
     
     val tpe = arg.tree.tpe.widen
+    
+    // Check for special-cased runtime types that don't need explicit JsonEncoder
+    val isSpecialType = 
+      tpe <:< typeOf[scala.collection.Map[_, _]] ||
+      tpe <:< typeOf[scala.collection.Iterable[_]] ||
+      tpe <:< typeOf[Array[_]] ||
+      tpe <:< typeOf[Option[_]] ||
+      tpe <:< typeOf[Json]
+    
+    if (isSpecialType) {
+      // These types are handled specially by the runtime
+      return
+    }
+    
     val encoderType = appliedType(typeOf[JsonEncoder[_]].typeConstructor, tpe)
     
     val encoder = c.inferImplicitValue(encoderType, silent = true)

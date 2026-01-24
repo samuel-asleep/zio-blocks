@@ -512,6 +512,26 @@ object JsonInterpolatorSpec extends SchemaBaseSpec {
         json"""{${x.toString}: "v"}""".get(x.toString).string == Right("v")
       )
     },
+    test("supports custom types with JsonEncoder in value positions") {
+      case class Person(name: String, age: Int)
+      
+      object Person {
+        implicit val schema: Schema[Person] = Schema.derived
+      }
+      
+      val person = Person("Alice", 20)
+      val jsonData = json"""{"data": $person}"""
+      assertTrue(
+        jsonData.get("data").get("name").string == Right("Alice") &&
+        jsonData.get("data").get("age").int == Right(20)
+      )
+    },
+    test("supports List values with JsonEncoder") {
+      val numbers = List(1, 2, 3)
+      assertTrue(
+        json"""{"nums": $numbers}""".get("nums").one == Right(Json.arr(Json.number(1), Json.number(2), Json.number(3)))
+      )
+    },
     test("doesn't compile for invalid json") {
       typeCheck {
         """json"1e""""
@@ -519,6 +539,38 @@ object JsonInterpolatorSpec extends SchemaBaseSpec {
       typeCheck {
         """json"[1,02]""""
       }.map(assert(_)(isLeft(containsString("Invalid JSON literal: illegal number with leading zero at: .at(1)"))))
+    } @@ exceptNative,
+    test("doesn't compile for non-stringable types in key positions") {
+      typeCheck {
+        """
+        import zio.blocks.schema._
+        import zio.blocks.schema.json._
+        case class Person(name: String)
+        object Person { implicit val schema: Schema[Person] = Schema.derived }
+        val p = Person("test")
+        val key: Person = p
+        json"{\"x\": ${key}}"
+        """
+      }.map(assert(_)(isLeft(containsString("Type error in JSON interpolation")))) &&
+      typeCheck {
+        """
+        import zio.blocks.schema.json._
+        val list = List(1, 2, 3)
+        val key: List[Int] = list
+        json"{\"x\": ${key}}"
+        """
+      }.map(assert(_)(isLeft(containsString("Type error in JSON interpolation"))))
+    } @@ exceptNative,
+    test("doesn't compile for types without JsonEncoder in value positions") {
+      typeCheck {
+        """
+        import zio.blocks.schema.json._
+        case class UnknownType(x: Int)
+        val u = UnknownType(42)
+        val value: UnknownType = u
+        json"{\"data\": ${value}}"
+        """
+      }.map(assert(_)(isLeft(containsString("Type error in JSON interpolation at value position")))) 
     } @@ exceptNative
   )
 }

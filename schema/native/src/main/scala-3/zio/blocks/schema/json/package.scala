@@ -132,6 +132,20 @@ package object json {
     import quotes.reflect._
     
     val tpe = arg.asTerm.tpe.widen
+    
+    // Check for special-cased runtime types that don't need explicit JsonEncoder
+    val isSpecialType = 
+      tpe <:< TypeRepr.of[scala.collection.Map[_, _]] ||
+      tpe <:< TypeRepr.of[scala.collection.Iterable[_]] ||
+      tpe <:< TypeRepr.of[Array[_]] ||
+      tpe <:< TypeRepr.of[Option[_]] ||
+      tpe <:< TypeRepr.of[Json]
+    
+    if (isSpecialType) {
+      // These types are handled specially by the runtime
+      return
+    }
+    
     val encoderType = TypeRepr.of[JsonEncoder].appliedTo(tpe)
     
     Implicits.search(encoderType) match {
