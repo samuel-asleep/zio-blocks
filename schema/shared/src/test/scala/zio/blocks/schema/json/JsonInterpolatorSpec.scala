@@ -769,7 +769,7 @@ object JsonInterpolatorSpec extends SchemaBaseSpec {
     // Regression tests
     suite("regression tests")(
       test("handles escape sequences correctly in string literals") {
-        val value    = "test\"quote"
+        val value     = "test\"quote"
         val backslash = "path\\file"
 
         assertTrue(
