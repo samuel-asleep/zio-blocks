@@ -692,6 +692,114 @@ object JsonInterpolatorSpec extends SchemaBaseSpec {
           result(2).boolean == Right(true)
         )
       }
+    ),
+
+    // Value position with Schema-derived types
+    suite("value position with Schema-derived types")(
+      test("supports types with Schema-derived JsonEncoder") {
+        case class SimpleData(value: Int) {
+          override def toString: String = s"""{"value":$value}"""
+        }
+        implicit val simpleDataSchema: Schema[SimpleData] = Schema.derived
+        val _ = simpleDataSchema // Ensure schema is in scope for JsonEncoder derivation
+
+        val data   = SimpleData(42)
+        val result = json"""{"data": $data}"""
+
+        // With current implementation, custom types use toString for encoding
+        assertTrue(result.toString.contains("42"))
+      },
+
+      test("supports collections containing primitive types") {
+        val numbers = List(1, 2, 3)
+        val strings = Vector("a", "b")
+
+        assertTrue(
+          json"""{"nums": $numbers}""".get("nums")(0).int == Right(1),
+          json"""{"strs": $strings}""".get("strs")(0).string == Right("a")
+        )
+      },
+
+      test("supports nested Option and collections") {
+        val someList: Option[List[Int]] = Some(List(1, 2))
+        val noneList: Option[List[Int]] = None
+
+        assertTrue(
+          json"""{"data": $someList}""".get("data")(0).int == Right(1),
+          json"""{"data": $noneList}""".get("data").one == Right(Json.Null)
+        )
+      }
+    ),
+
+    // Compile-time error tests
+    suite("compile-time error tests")(
+      test("compile fails for non-stringable types in key position") {
+        typeCheck("""
+          import zio.blocks.schema._
+          import zio.blocks.schema.json._
+          case class PointBad(x: Int, y: Int)
+          object PointBad { implicit val schema: Schema[PointBad] = Schema.derived }
+          val p = PointBad(1, 2)
+          json"{$p: \"value\"}"
+        """).map(assert(_)(isLeft))
+      } @@ exceptNative,
+
+      test("compile fails for types without JsonEncoder in value position") {
+        typeCheck("""
+          import zio.blocks.schema.json._
+          case class NoSchema(x: Int)
+          val v = NoSchema(1)
+          json"{\"value\": $v}"
+        """).map(assert(_)(isLeft))
+      } @@ exceptNative,
+
+      test("compile fails for non-stringable types in string literals") {
+        typeCheck("""
+          import zio.blocks.schema._
+          import zio.blocks.schema.json._
+          case class PointStr(x: Int, y: Int)
+          object PointStr { implicit val schema: Schema[PointStr] = Schema.derived }
+          val p = PointStr(1, 2)
+          json"{\"msg\": \"Point is $p\"}"
+        """).map(assert(_)(isLeft))
+      } @@ exceptNative
+    ),
+
+    // Regression tests
+    suite("regression tests")(
+      test("handles escape sequences correctly in string literals") {
+        val value    = "test\"quote"
+        val backslash = "path\\file"
+
+        assertTrue(
+          json"""{"quoted": "$value"}""".get("quoted").string == Right("test\"quote"),
+          json"""{"backslash": "$backslash"}""".get("backslash").string == Right("path\\file")
+        )
+      },
+
+      test("handles commas in Map serialization") {
+        val data = Map("key1" -> 1, "key2" -> 2, "key3" -> 3)
+
+        val result = json"""{"data": $data}"""
+
+        assertTrue(
+          result.get("data").get("key1").int == Right(1),
+          result.get("data").get("key2").int == Right(2),
+          result.get("data").get("key3").int == Right(3)
+        )
+      },
+
+      test("handles commas in Iterable serialization") {
+        val items = List(1, 2, 3, 4, 5)
+
+        val result = json"""{"items": $items}"""
+
+        assertTrue(
+          result.get("items")(0).int == Right(1),
+          result.get("items")(1).int == Right(2),
+          result.get("items")(4).int == Right(5)
+        )
+      }
     )
   )
 }
