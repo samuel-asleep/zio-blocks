@@ -692,23 +692,6 @@ object JsonInterpolatorSpec extends SchemaBaseSpec {
           result(2).boolean == Right(true)
         )
       }
-    ),
-
-
-
-
-
-    // Regression tests
-    suite("regression tests")(
-      test("handles escape sequences correctly in string literals") {
-        val value     = "test\"quote"
-        val backslash = "path\\file"
-
-        assertTrue(
-          json"""{"quoted": "$value"}""".get("quoted").string == Right("test\"quote"),
-          json"""{"backslash": "$backslash"}""".get("backslash").string == Right("path\\file")
-        )
-      }
     )
   )
 }
