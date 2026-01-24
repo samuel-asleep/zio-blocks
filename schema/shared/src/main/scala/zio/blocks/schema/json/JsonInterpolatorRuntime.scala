@@ -17,6 +17,8 @@ object JsonInterpolatorRuntime {
     
     // Track whether we're inside a string literal across multiple interpolations
     var inStringLiteral = isInStringLiteral(parts.head)
+    // Maintain accumulated text for O(n) context detection
+    val accumulatedText = new java.lang.StringBuilder(parts.head)
     
     var i = 0
     while (i < args.length) {
@@ -24,15 +26,7 @@ object JsonInterpolatorRuntime {
         Context.StringLiteral
       } else {
         val after = if (i + 1 < parts.length) parts(i + 1) else ""
-        // Build the text so far for accurate context detection
-        val beforeUpToNow = new java.lang.StringBuilder()
-        var j = 0
-        while (j <= i) {
-          beforeUpToNow.append(parts(j))
-          if (j < i) beforeUpToNow.append("x") // placeholder for previous args
-          j += 1
-        }
-        detectContextFromBeforeAfter(beforeUpToNow.toString, after)
+        detectContextFromBeforeAfter(accumulatedText.toString, after)
       }
       
       context match {
@@ -55,6 +49,9 @@ object JsonInterpolatorRuntime {
         // We weren't in a string, check if this part opens one
         inStringLiteral = isInStringLiteral(nextPart)
       }
+      
+      // Update accumulated text with placeholder for this arg and the next part
+      accumulatedText.append("x").append(nextPart)
       
       i += 1
     }
@@ -160,7 +157,7 @@ object JsonInterpolatorRuntime {
     case l: Long       => out.write(l.toString)
     case f: Float      => out.write(JsonBinaryCodec.floatCodec.encodeToString(f))
     case d: Double     => out.write(JsonBinaryCodec.doubleCodec.encodeToString(d))
-    case c: Char       => out.write(c.toString)
+    case c: Char       => writeJsonEscapedString(out, c.toString) // Escape special chars
     case bd: BigDecimal => out.write(bd.toString)
     case bi: BigInt    => out.write(bi.toString)
     case dow: DayOfWeek => out.write(dow.toString)
@@ -181,7 +178,7 @@ object JsonInterpolatorRuntime {
     case zdt: ZonedDateTime => out.write(zdt.toString)
     case c: Currency    => out.write(c.toString)
     case uuid: UUID     => out.write(uuid.toString)
-    case x              => out.write(x.toString)
+    case x              => writeJsonEscapedString(out, if (x == null) "null" else x.toString) // Escape fallback
   }
 
   private def writeKeyOnly(out: ByteArrayOutputStream, key: Any): Unit = {

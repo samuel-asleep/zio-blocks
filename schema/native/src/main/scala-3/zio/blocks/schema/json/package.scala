@@ -42,20 +42,27 @@ package object json {
   }
 
   private def detectInterpolationContext(parts: Seq[String], argIndex: Int): InterpolationContext = {
-    val before = parts(argIndex)
-    val after = if (argIndex + 1 < parts.length) parts(argIndex + 1) else ""
+    // Track string literal context across all parts up to this point
+    var inStringLiteral = false
+    var i = 0
+    while (i <= argIndex) {
+      if (isInStringLiteral(parts(i))) {
+        inStringLiteral = !inStringLiteral
+      }
+      i += 1
+    }
     
-    // Check if we're inside a string literal (odd number of unescaped quotes before)
-    if (isInStringLiteral(before)) {
+    if (inStringLiteral) {
       InterpolationContext.StringLiteral
-    }
-    // Check if this is a key position (after '{' or ',' and before ':')
-    else if (isKeyPosition(before, after)) {
-      InterpolationContext.Key
-    }
-    // Otherwise it's a value position
-    else {
-      InterpolationContext.Value
+    } else {
+      val before = parts(argIndex)
+      val after = if (argIndex + 1 < parts.length) parts(argIndex + 1) else ""
+      // Check if this is a key position (after '{' or ',' and before ':')
+      if (isKeyPosition(before, after)) {
+        InterpolationContext.Key
+      } else {
+        InterpolationContext.Value
+      }
     }
   }
 
