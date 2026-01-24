@@ -567,6 +567,52 @@ object JsonInterpolatorSpec extends SchemaBaseSpec {
         )
       },
 
+      test("supports additional temporal types in strings") {
+        val dayOfWeek      = DayOfWeek.MONDAY
+        val duration       = Duration.ofHours(2)
+        val month          = Month.JANUARY
+        val monthDay       = MonthDay.of(3, 15)
+        val offsetTime     = OffsetTime.of(10, 30, 0, 0, ZoneOffset.UTC)
+        val period         = Period.ofDays(7)
+        val year           = Year.of(2024)
+        val yearMonth      = YearMonth.of(2024, 3)
+        val zoneOffset     = ZoneOffset.ofHours(5)
+        val zoneId         = ZoneId.of("UTC")
+        val zonedDateTime  = ZonedDateTime.of(2024, 1, 15, 10, 30, 0, 0, ZoneId.of("UTC"))
+        val localDateTime  = LocalDateTime.of(2024, 1, 15, 10, 30)
+        val offsetDateTime = OffsetDateTime.of(2024, 1, 15, 10, 30, 0, 0, ZoneOffset.UTC)
+
+        assertTrue(
+          json"""{"dow": "Day: $dayOfWeek"}""".get("dow").string == Right("Day: MONDAY"),
+          json"""{"dur": "Duration: $duration"}""".get("dur").string == Right("Duration: PT2H"),
+          json"""{"mon": "Month: $month"}""".get("mon").string == Right("Month: JANUARY"),
+          json"""{"md": "Date: $monthDay"}""".get("md").string == Right("Date: --03-15"),
+          json"""{"ot": "Time: $offsetTime"}""".get("ot").string == Right("Time: 10:30Z"),
+          json"""{"per": "Period: $period"}""".get("per").string == Right("Period: P7D"),
+          json"""{"yr": "Year: $year"}""".get("yr").string == Right("Year: 2024"),
+          json"""{"ym": "YearMonth: $yearMonth"}""".get("ym").string == Right("YearMonth: 2024-03"),
+          json"""{"zo": "Offset: $zoneOffset"}""".get("zo").string == Right("Offset: +05:00"),
+          json"""{"zi": "Zone: $zoneId"}""".get("zi").string == Right("Zone: UTC"),
+          json"""{"zdt": "ZonedDT: $zonedDateTime"}""".get("zdt").string.isRight,
+          json"""{"ldt": "LocalDT: $localDateTime"}""".get("ldt").string == Right("LocalDT: 2024-01-15T10:30"),
+          json"""{"odt": "OffsetDT: $offsetDateTime"}""".get("odt").string == Right("OffsetDT: 2024-01-15T10:30Z")
+        )
+      },
+
+      test("supports numeric primitives in strings") {
+        val byte: Byte   = 127
+        val short: Short = 32000
+        val char: Char   = 'A'
+        val float: Float = 3.14f
+
+        assertTrue(
+          json"""{"byte": "Value: $byte"}""".get("byte").string == Right("Value: 127"),
+          json"""{"short": "Value: $short"}""".get("short").string == Right("Value: 32000"),
+          json"""{"char": "Char: $char"}""".get("char").string == Right("Char: A"),
+          json"""{"float": "Float: $float"}""".get("float").string == Right("Float: 3.14")
+        )
+      },
+
       test("supports Currency in strings") {
         val currency = java.util.Currency.getInstance("USD")
         assertTrue(
@@ -690,6 +736,24 @@ object JsonInterpolatorSpec extends SchemaBaseSpec {
           result(0).int == Right(42),
           result(1).string == Right("hello"),
           result(2).boolean == Right(true)
+        )
+      },
+
+      test("handles null values in string literals") {
+        val nullValue: String = null
+
+        assertTrue(
+          json"""{"msg": "Value: $nullValue"}""".get("msg").string == Right("Value: null")
+        )
+      },
+
+      test("handles BigDecimal and BigInt in keys") {
+        val bdKey = BigDecimal("123.456")
+        val biKey = BigInt("999999999999999999")
+
+        assertTrue(
+          json"""{$bdKey: "decimal", $biKey: "bigint"}""".get("123.456").string == Right("decimal"),
+          json"""{$bdKey: "decimal", $biKey: "bigint"}""".get("999999999999999999").string == Right("bigint")
         )
       }
     )
