@@ -11,15 +11,15 @@ import scala.annotation.tailrec
  */
 object JsonInterpolatorRuntime {
   def jsonWithInterpolation(sc: StringContext, args: Seq[Any]): Json = {
-    val parts  = sc.parts
-    val out    = new ByteArrayOutputStream(parts.head.length << 1)
+    val parts = sc.parts
+    val out   = new ByteArrayOutputStream(parts.head.length << 1)
     out.write(parts.head)
-    
+
     // Track whether we're inside a string literal across multiple interpolations
     var inStringLiteral = isInStringLiteral(parts.head)
     // Maintain accumulated text for O(n) context detection
     val accumulatedText = new java.lang.StringBuilder(parts.head)
-    
+
     var i = 0
     while (i < args.length) {
       val context = if (inStringLiteral) {
@@ -28,7 +28,7 @@ object JsonInterpolatorRuntime {
         val after = if (i + 1 < parts.length) parts(i + 1) else ""
         detectContextFromBeforeAfter(accumulatedText.toString, after)
       }
-      
+
       context match {
         case Context.Key =>
           writeKeyOnly(out, args(i))
@@ -37,10 +37,10 @@ object JsonInterpolatorRuntime {
         case Context.Value =>
           writeValue(out, args(i))
       }
-      
+
       val nextPart = parts(i + 1)
       out.write(nextPart)
-      
+
       // Update string literal tracking
       if (inStringLiteral) {
         // We were in a string, check if this part closes it
@@ -49,13 +49,13 @@ object JsonInterpolatorRuntime {
         // We weren't in a string, check if this part opens one
         inStringLiteral = isInStringLiteral(nextPart)
       }
-      
+
       // Update accumulated text with placeholder for this arg and the next part
       accumulatedText.append("x").append(nextPart)
-      
+
       i += 1
     }
-    
+
     Json.jsonCodec.decode(out.toByteArray) match {
       case Right(json) => json
       case Left(error) => throw error
@@ -64,12 +64,12 @@ object JsonInterpolatorRuntime {
 
   private sealed trait Context
   private object Context {
-    case object Key extends Context
-    case object Value extends Context
+    case object Key           extends Context
+    case object Value         extends Context
     case object StringLiteral extends Context
   }
 
-  private def detectContextFromBeforeAfter(before: String, after: String): Context = {
+  private def detectContextFromBeforeAfter(before: String, after: String): Context =
     // Check if we're inside a string literal (odd number of unescaped quotes before)
     if (isInStringLiteral(before)) {
       Context.StringLiteral
@@ -82,17 +82,16 @@ object JsonInterpolatorRuntime {
     else {
       Context.Value
     }
-  }
 
   private def isInStringLiteral(text: String): Boolean = {
     var inQuote = false
-    var i = 0
+    var i       = 0
     while (i < text.length) {
       val c = text.charAt(i)
       if (c == '"') {
         // Count consecutive backslashes before this quote
         var backslashCount = 0
-        var j = i - 1
+        var j              = i - 1
         while (j >= 0 && text.charAt(j) == '\\') {
           backslashCount += 1
           j -= 1
@@ -109,28 +108,28 @@ object JsonInterpolatorRuntime {
 
   private def isKeyPosition(before: String, after: String): Boolean = {
     val trimmedBefore = before.reverse.dropWhile(c => c.isWhitespace).reverse
-    val trimmedAfter = after.dropWhile(c => c.isWhitespace)
-    
+    val trimmedAfter  = after.dropWhile(c => c.isWhitespace)
+
     (trimmedBefore.endsWith("{") || trimmedBefore.endsWith(",")) && trimmedAfter.startsWith(":")
   }
 
   /**
    * Writes a value into an existing JSON string literal, escaping according to
-   * JSON string rules but without adding surrounding quotes (the literal already
-   * provides them).
+   * JSON string rules but without adding surrounding quotes (the literal
+   * already provides them).
    */
   private def writeJsonEscapedString(out: ByteArrayOutputStream, s: String): Unit = {
     val sb = new java.lang.StringBuilder(s.length + 16)
     var i  = 0
     while (i < s.length) {
       s.charAt(i) match {
-        case '"'  => sb.append("\\\"")
-        case '\\' => sb.append("\\\\")
-        case '\b' => sb.append("\\b")
-        case '\f' => sb.append("\\f")
-        case '\n' => sb.append("\\n")
-        case '\r' => sb.append("\\r")
-        case '\t' => sb.append("\\t")
+        case '"'          => sb.append("\\\"")
+        case '\\'         => sb.append("\\\\")
+        case '\b'         => sb.append("\\b")
+        case '\f'         => sb.append("\\f")
+        case '\n'         => sb.append("\\n")
+        case '\r'         => sb.append("\\r")
+        case '\t'         => sb.append("\\t")
         case c if c < ' ' =>
           val hex = Integer.toHexString(c.toInt)
           sb.append("\\u")
@@ -149,39 +148,39 @@ object JsonInterpolatorRuntime {
   }
 
   private def writeStringLiteralValue(out: ByteArrayOutputStream, value: Any): Unit = value match {
-    case s: String     => writeJsonEscapedString(out, s) // Escape JSON special chars
-    case b: Boolean    => out.write(b.toString)
-    case b: Byte       => out.write(b.toString)
-    case sh: Short     => out.write(sh.toString)
-    case i: Int        => out.write(i.toString)
-    case l: Long       => out.write(l.toString)
-    case f: Float      => out.write(JsonBinaryCodec.floatCodec.encodeToString(f))
-    case d: Double     => out.write(JsonBinaryCodec.doubleCodec.encodeToString(d))
-    case c: Char       => writeJsonEscapedString(out, c.toString) // Escape special chars
-    case bd: BigDecimal => out.write(bd.toString)
-    case bi: BigInt    => out.write(bi.toString)
-    case dow: DayOfWeek => out.write(dow.toString)
-    case d: Duration    => out.write(d.toString)
-    case i: Instant     => out.write(i.toString)
-    case ld: LocalDate  => out.write(ld.toString)
-    case ldt: LocalDateTime => out.write(ldt.toString)
-    case lt: LocalTime  => out.write(lt.toString)
-    case m: Month       => out.write(m.toString)
-    case md: MonthDay   => out.write(md.toString)
+    case s: String           => writeJsonEscapedString(out, s)                                     // Escape JSON special chars
+    case b: Boolean          => out.write(b.toString)
+    case b: Byte             => out.write(b.toString)
+    case sh: Short           => out.write(sh.toString)
+    case i: Int              => out.write(i.toString)
+    case l: Long             => out.write(l.toString)
+    case f: Float            => out.write(JsonBinaryCodec.floatCodec.encodeToString(f))
+    case d: Double           => out.write(JsonBinaryCodec.doubleCodec.encodeToString(d))
+    case c: Char             => writeJsonEscapedString(out, c.toString)                            // Escape special chars
+    case bd: BigDecimal      => out.write(bd.toString)
+    case bi: BigInt          => out.write(bi.toString)
+    case dow: DayOfWeek      => out.write(dow.toString)
+    case d: Duration         => out.write(d.toString)
+    case i: Instant          => out.write(i.toString)
+    case ld: LocalDate       => out.write(ld.toString)
+    case ldt: LocalDateTime  => out.write(ldt.toString)
+    case lt: LocalTime       => out.write(lt.toString)
+    case m: Month            => out.write(m.toString)
+    case md: MonthDay        => out.write(md.toString)
     case odt: OffsetDateTime => out.write(odt.toString)
-    case ot: OffsetTime => out.write(ot.toString)
-    case p: Period      => out.write(p.toString)
-    case y: Year        => out.write(y.toString)
-    case ym: YearMonth  => out.write(ym.toString)
-    case zo: ZoneOffset => out.write(zo.toString)
-    case zi: ZoneId     => out.write(zi.toString)
-    case zdt: ZonedDateTime => out.write(zdt.toString)
-    case c: Currency    => out.write(c.toString)
-    case uuid: UUID     => out.write(uuid.toString)
-    case x              => writeJsonEscapedString(out, if (x == null) "null" else x.toString) // Escape fallback
+    case ot: OffsetTime      => out.write(ot.toString)
+    case p: Period           => out.write(p.toString)
+    case y: Year             => out.write(y.toString)
+    case ym: YearMonth       => out.write(ym.toString)
+    case zo: ZoneOffset      => out.write(zo.toString)
+    case zi: ZoneId          => out.write(zi.toString)
+    case zdt: ZonedDateTime  => out.write(zdt.toString)
+    case c: Currency         => out.write(c.toString)
+    case uuid: UUID          => out.write(uuid.toString)
+    case x                   => writeJsonEscapedString(out, if (x == null) "null" else x.toString) // Escape fallback
   }
 
-  private def writeKeyOnly(out: ByteArrayOutputStream, key: Any): Unit = {
+  private def writeKeyOnly(out: ByteArrayOutputStream, key: Any): Unit =
     key match {
       case s: String  => JsonBinaryCodec.stringCodec.encode(s, out)
       case b: Boolean =>
@@ -241,7 +240,6 @@ object JsonInterpolatorRuntime {
       case x                   => JsonBinaryCodec.stringCodec.encode(x.toString, out)
     }
     // Don't write colon - it's in the next part
-  }
 
   private[this] def writeValue(out: ByteArrayOutputStream, value: Any): Unit = value match {
     case s: String             => JsonBinaryCodec.stringCodec.encode(s, out)
