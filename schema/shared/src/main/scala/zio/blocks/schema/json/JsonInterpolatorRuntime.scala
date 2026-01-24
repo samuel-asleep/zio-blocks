@@ -154,8 +154,8 @@ object JsonInterpolatorRuntime {
     case sh: Short           => out.write(sh.toString)
     case i: Int              => out.write(i.toString)
     case l: Long             => out.write(l.toString)
-    case f: Float            => out.write(f.toString)                                              // Use toString to handle NaN/Infinity in string context
-    case d: Double           => out.write(d.toString)                                              // Use toString to handle NaN/Infinity in string context
+    case f: Float            => out.write(JsonBinaryCodec.floatCodec.encodeToString(f))
+    case d: Double           => out.write(JsonBinaryCodec.doubleCodec.encodeToString(d))
     case c: Char             => writeJsonEscapedString(out, c.toString)                            // Escape special chars
     case bd: BigDecimal      => out.write(bd.toString)
     case bi: BigInt          => out.write(bi.toString)
