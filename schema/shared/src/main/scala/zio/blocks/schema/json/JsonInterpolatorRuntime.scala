@@ -17,16 +17,15 @@ object JsonInterpolatorRuntime {
 
     // Track whether we're inside a string literal across multiple interpolations
     var inStringLiteral = isInStringLiteral(parts.head)
-    // Maintain accumulated text for O(n) context detection
-    val accumulatedText = new java.lang.StringBuilder(parts.head)
 
     var i = 0
     while (i < args.length) {
       val context = if (inStringLiteral) {
         Context.StringLiteral
       } else {
-        val after = if (i + 1 < parts.length) parts(i + 1) else ""
-        detectContextFromBeforeAfter(accumulatedText.toString, after)
+        val before = parts(i)
+        val after  = if (i + 1 < parts.length) parts(i + 1) else ""
+        detectContextFromBeforeAfter(before, after)
       }
 
       context match {
@@ -49,9 +48,6 @@ object JsonInterpolatorRuntime {
         // We weren't in a string, check if this part opens one
         inStringLiteral = isInStringLiteral(nextPart)
       }
-
-      // Update accumulated text with placeholder for this arg and the next part
-      accumulatedText.append("x").append(nextPart)
 
       i += 1
     }
@@ -345,11 +341,13 @@ object JsonInterpolatorRuntime {
         out.write('"')
       case f: Float =>
         out.write('"')
-        JsonBinaryCodec.floatCodec.encode(f, out)
+        // Use toString for NaN/Infinity to avoid JsonBinaryCodec throwing
+        out.write(f.toString)
         out.write('"')
       case d: Double =>
         out.write('"')
-        JsonBinaryCodec.doubleCodec.encode(d, out)
+        // Use toString for NaN/Infinity to avoid JsonBinaryCodec throwing
+        out.write(d.toString)
         out.write('"')
       case bd: BigDecimal =>
         out.write('"')
