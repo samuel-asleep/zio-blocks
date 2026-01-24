@@ -17,14 +17,14 @@ package object json {
         rawParts.map { case '{ $rawPart: String } => rawPart.valueOrAbort }
       case _ => report.errorAndAbort("Expected a StringContext with string literal parts")
     }
-    
+
     // Validate JSON syntax with placeholder values
     try {
       val placeholders = (0 until parts.length - 1).map { i =>
         val context = detectInterpolationContext(parts, i)
         context match {
-          case InterpolationContext.Key => "x"
-          case InterpolationContext.Value => "null"
+          case InterpolationContext.Key           => "x"
+          case InterpolationContext.Value         => "null"
           case InterpolationContext.StringLiteral => "x"
         }
       }
@@ -32,7 +32,7 @@ package object json {
     } catch {
       case error if NonFatal(error) => report.errorAndAbort(s"Invalid JSON literal: ${error.getMessage}")
     }
-    
+
     // Type-check each interpolation based on its context
     args match {
       case Varargs(argExprs) =>
@@ -49,7 +49,7 @@ package object json {
         }
       case _ => // No args to check
     }
-    
+
     '{ JsonInterpolatorRuntime.jsonWithInterpolation($sc, $args) }
   }
 
@@ -60,19 +60,19 @@ package object json {
   private def detectInterpolationContext(parts: Seq[String], argIndex: Int): InterpolationContext = {
     // Track string literal context across all parts up to this point
     var inStringLiteral = false
-    var i = 0
+    var i               = 0
     while (i <= argIndex) {
       if (isInStringLiteral(parts(i))) {
         inStringLiteral = !inStringLiteral
       }
       i += 1
     }
-    
+
     if (inStringLiteral) {
       InterpolationContext.StringLiteral
     } else {
       val before = parts(argIndex)
-      val after = if (argIndex + 1 < parts.length) parts(argIndex + 1) else ""
+      val after  = if (argIndex + 1 < parts.length) parts(argIndex + 1) else ""
       // Check if this is a key position (after '{' or ',' and before ':')
       if (isKeyPosition(before, after)) {
         InterpolationContext.Key
@@ -84,13 +84,13 @@ package object json {
 
   private def isInStringLiteral(text: String): Boolean = {
     var inQuote = false
-    var i = 0
+    var i       = 0
     while (i < text.length) {
       val c = text.charAt(i)
       if (c == '"') {
         // Count consecutive backslashes before this quote
         var backslashCount = 0
-        var j = i - 1
+        var j              = i - 1
         while (j >= 0 && text.charAt(j) == '\\') {
           backslashCount += 1
           j -= 1
@@ -107,16 +107,16 @@ package object json {
 
   private def isKeyPosition(before: String, after: String): Boolean = {
     val trimmedBefore = before.reverse.dropWhile(c => c.isWhitespace).reverse
-    val trimmedAfter = after.dropWhile(c => c.isWhitespace)
-    
+    val trimmedAfter  = after.dropWhile(c => c.isWhitespace)
+
     (trimmedBefore.endsWith("{") || trimmedBefore.endsWith(",")) && trimmedAfter.startsWith(":")
   }
 
   private def checkStringableType(arg: Expr[Any], context: String)(using Quotes): Unit = {
     import quotes.reflect._
-    
+
     val tpe = arg.asTerm.tpe.widen
-    
+
     // Check if the type is a stringable primitive type
     val isStringable = tpe <:< TypeRepr.of[String] ||
       tpe <:< TypeRepr.of[Boolean] ||
@@ -147,53 +147,53 @@ package object json {
       tpe <:< TypeRepr.of[java.time.ZonedDateTime] ||
       tpe <:< TypeRepr.of[java.util.UUID] ||
       tpe <:< TypeRepr.of[java.util.Currency]
-    
+
     if (!isStringable) {
       val typeStr = tpe.show
       report.errorAndAbort(
         s"Type error in JSON interpolation at $context:\n" +
-        s"  Found: $typeStr\n" +
-        s"  Required: A stringable type (primitive types as defined in PrimitiveType)\n" +
-        s"  Hint: Only primitive types can be used in $context.\n" +
-        s"        Supported types: String, Boolean, Byte, Short, Int, Long, Float, Double, Char,\n" +
-        s"        BigDecimal, BigInt, java.time.*, java.util.UUID, java.util.Currency"
+          s"  Found: $typeStr\n" +
+          s"  Required: A stringable type (primitive types as defined in PrimitiveType)\n" +
+          s"  Hint: Only primitive types can be used in $context.\n" +
+          s"        Supported types: String, Boolean, Byte, Short, Int, Long, Float, Double, Char,\n" +
+          s"        BigDecimal, BigInt, java.time.*, java.util.UUID, java.util.Currency"
       )
     }
   }
 
   private def checkHasJsonEncoder(arg: Expr[Any], context: String)(using Quotes): Unit = {
     import quotes.reflect._
-    
+
     val tpe = arg.asTerm.tpe.widen
-    
+
     // Check for special-cased runtime types that don't need explicit JsonEncoder
-    val isSpecialType = 
+    val isSpecialType =
       tpe <:< TypeRepr.of[scala.collection.Map[_, _]] ||
-      tpe <:< TypeRepr.of[scala.collection.Iterable[_]] ||
-      tpe <:< TypeRepr.of[Array[_]] ||
-      tpe <:< TypeRepr.of[Option[_]] ||
-      tpe <:< TypeRepr.of[Json]
-    
+        tpe <:< TypeRepr.of[scala.collection.Iterable[_]] ||
+        tpe <:< TypeRepr.of[Array[_]] ||
+        tpe <:< TypeRepr.of[Option[_]] ||
+        tpe <:< TypeRepr.of[Json]
+
     if (isSpecialType) {
       // These types are handled specially by the runtime
       return
     }
-    
+
     val encoderType = TypeRepr.of[JsonEncoder].appliedTo(tpe)
-    
+
     Implicits.search(encoderType) match {
       case _: ImplicitSearchSuccess => // Has JsonEncoder, OK
       case _: ImplicitSearchFailure =>
         val typeStr = tpe.show
         report.errorAndAbort(
           s"Type error in JSON interpolation at $context:\n" +
-          s"  Found: $typeStr\n" +
-          s"  Required: A type with an implicit JsonEncoder[$typeStr]\n" +
-          s"  Hint: Provide an implicit JsonEncoder[$typeStr] in scope.\n" +
-          s"        JsonEncoders can be:\n" +
-          s"        - Explicitly defined\n" +
-          s"        - Derived from Schema[$typeStr] (ensure implicit Schema[$typeStr] is in scope)\n" +
-          s"        - Provided by JsonBinaryCodec"
+            s"  Found: $typeStr\n" +
+            s"  Required: A type with an implicit JsonEncoder[$typeStr]\n" +
+            s"  Hint: Provide an implicit JsonEncoder[$typeStr] in scope.\n" +
+            s"        JsonEncoders can be:\n" +
+            s"        - Explicitly defined\n" +
+            s"        - Derived from Schema[$typeStr] (ensure implicit Schema[$typeStr] is in scope)\n" +
+            s"        - Provided by JsonBinaryCodec"
         )
     }
   }
