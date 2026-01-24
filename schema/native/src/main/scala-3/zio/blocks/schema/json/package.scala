@@ -135,8 +135,8 @@ package object json {
     val encoderType = TypeRepr.of[JsonEncoder].appliedTo(tpe)
     
     Implicits.search(encoderType) match {
-      case success: ImplicitSearchSuccess => // Has JsonEncoder, OK
-      case failure: ImplicitSearchFailure =>
+      case _: ImplicitSearchSuccess => // Has JsonEncoder, OK
+      case _: ImplicitSearchFailure =>
         val typeStr = tpe.show
         report.errorAndAbort(
           s"Type error in JSON interpolation at $context:\n" +
