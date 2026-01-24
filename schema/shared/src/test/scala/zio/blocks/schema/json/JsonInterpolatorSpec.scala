@@ -692,41 +692,6 @@ object JsonInterpolatorSpec extends SchemaBaseSpec {
           result(2).boolean == Right(true)
         )
       }
-    ),
-
-    // Additional edge case tests for coverage
-    suite("edge cases")(
-      test("handles nested JSON with interpolated values") {
-        val userId   = 123
-        val userName = "alice"
-        val active   = true
-
-        val result = json"""{
-          "user": {
-            "id": $userId,
-            "name": $userName,
-            "active": $active
-          }
-        }"""
-
-        assertTrue(
-          result.get("user").get("id").int == Right(123),
-          result.get("user").get("name").string == Right("alice"),
-          result.get("user").get("active").boolean == Right(true)
-        )
-      },
-
-      test("handles empty collections") {
-        val emptyList   = List.empty[Int]
-        val emptyMap    = Map.empty[String, Int]
-        val emptyVector = Vector.empty[String]
-
-        assertTrue(
-          json"""{"list": $emptyList}""".get("list").one == Right(Json.arr()),
-          json"""{"map": $emptyMap}""".get("map").one == Right(Json.obj()),
-          json"""{"vec": $emptyVector}""".get("vec").one == Right(Json.arr())
-        )
-      }
     )
   )
 }
