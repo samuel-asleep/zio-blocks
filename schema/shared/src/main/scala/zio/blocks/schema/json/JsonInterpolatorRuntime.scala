@@ -340,15 +340,9 @@ object JsonInterpolatorRuntime {
         JsonBinaryCodec.longCodec.encode(l, out)
         out.write('"')
       case f: Float =>
-        out.write('"')
-        // Use toString for NaN/Infinity to avoid JsonBinaryCodec throwing
-        out.write(f.toString)
-        out.write('"')
+        writeQuotedPrimitive(out, f, JsonBinaryCodec.floatCodec)
       case d: Double =>
-        out.write('"')
-        // Use toString for NaN/Infinity to avoid JsonBinaryCodec throwing
-        out.write(d.toString)
-        out.write('"')
+        writeQuotedPrimitive(out, d, JsonBinaryCodec.doubleCodec)
       case bd: BigDecimal =>
         out.write('"')
         JsonBinaryCodec.bigDecimalCodec.encode(bd, out)
