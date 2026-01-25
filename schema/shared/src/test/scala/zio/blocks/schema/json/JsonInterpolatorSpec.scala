@@ -905,8 +905,8 @@ object JsonInterpolatorSpec extends SchemaBaseSpec {
         // The macro's checkStringableType enforces this at compile-time
         val s: String                  = "key"
         val i: Int                     = 42
-        val uuid: java.util.UUID       = java.util.UUID.randomUUID()
-        val instant: java.time.Instant = java.time.Instant.now()
+        val uuid: java.util.UUID       = java.util.UUID.fromString("550e8400-e29b-41d4-a716-446655440000")
+        val instant: java.time.Instant = java.time.Instant.parse("2024-01-15T10:30:00Z")
 
         assertTrue(
           json"""{ $s : 1 }""".get(s).int == Right(1),
@@ -920,7 +920,7 @@ object JsonInterpolatorSpec extends SchemaBaseSpec {
         // The macro's checkStringableType enforces this at compile-time
         val name  = "Alice"
         val count = 42
-        val id    = java.util.UUID.randomUUID()
+        val id    = java.util.UUID.fromString("550e8400-e29b-41d4-a716-446655440000")
         val date  = java.time.LocalDate.of(2024, 1, 15)
 
         assertTrue(
