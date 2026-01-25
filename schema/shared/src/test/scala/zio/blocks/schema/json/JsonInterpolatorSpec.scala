@@ -100,6 +100,20 @@ object JsonInterpolatorSpec extends SchemaBaseSpec {
         )
       )
     },
+    test("supports interpolated Float keys with NaN and Infinity") {
+      assertTrue(
+        json"""{${Float.NaN}: "nan"}""".get("NaN").string == Right("nan"),
+        json"""{${Float.PositiveInfinity}: "pos"}""".get("Infinity").string == Right("pos"),
+        json"""{${Float.NegativeInfinity}: "neg"}""".get("-Infinity").string == Right("neg")
+      )
+    },
+    test("supports interpolated Double keys with NaN and Infinity") {
+      assertTrue(
+        json"""{${Double.NaN}: "nan"}""".get("NaN").string == Right("nan"),
+        json"""{${Double.PositiveInfinity}: "pos"}""".get("Infinity").string == Right("pos"),
+        json"""{${Double.NegativeInfinity}: "neg"}""".get("-Infinity").string == Right("neg")
+      )
+    },
     test("supports interpolated Char keys and values") {
       check(
         Gen.char.filter(x => x <= 0xd800 || x >= 0xdfff) // excluding surrogate chars
@@ -545,6 +559,21 @@ object JsonInterpolatorSpec extends SchemaBaseSpec {
           json"""{"msg": "x is $x"}""".get("msg").string == Right("x is 42"),
           json"""{"msg": "y is $y"}""".get("msg").string == Right("y is 3.14"),
           json"""{"msg": "big is $big"}""".get("msg").string == Right("big is 12345678901234567890")
+        )
+      },
+
+      test("supports NaN and Infinity in strings") {
+        assertTrue(
+          json"""{"nan": "value: ${Float.NaN}"}""".get("nan").string == Right("value: NaN"),
+          json"""{"posinf": "value: ${Float.PositiveInfinity}"}""".get("posinf").string == Right("value: Infinity"),
+          json"""{"neginf": "value: ${Float.NegativeInfinity}"}""".get("neginf").string == Right("value: -Infinity"),
+          json"""{"dnan": "value: ${Double.NaN}"}""".get("dnan").string == Right("value: NaN"),
+          json"""{"dposinf": "value: ${Double.PositiveInfinity}"}""".get("dposinf").string == Right(
+            "value: Infinity"
+          ),
+          json"""{"dneginf": "value: ${Double.NegativeInfinity}"}""".get("dneginf").string == Right(
+            "value: -Infinity"
+          )
         )
       },
 
