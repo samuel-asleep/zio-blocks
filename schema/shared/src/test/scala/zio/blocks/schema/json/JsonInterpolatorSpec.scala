@@ -889,7 +889,7 @@ object JsonInterpolatorSpec extends SchemaBaseSpec {
           json"""{"escaped": "$withEscapedQuote"}""".get("escaped").string == Right("""text with \" quote""")
         )
       },
-      
+
       test("detects string literal from before context") {
         // Test line 70 - isInStringLiteral(before) branch
         val value = "test"
