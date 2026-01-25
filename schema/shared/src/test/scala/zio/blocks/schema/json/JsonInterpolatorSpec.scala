@@ -785,6 +785,119 @@ object JsonInterpolatorSpec extends SchemaBaseSpec {
           json"""{$bdKey: "decimal", $biKey: "bigint"}""".get("999999999999999999").string == Right("bigint")
         )
       }
+    ),
+
+    // Additional targeted tests for uncovered code paths
+    suite("edge cases and coverage")(
+      test("handles escape sequences in string literals") {
+        val withBackspace      = "text\bmore"
+        val withFormFeed       = "text\fmore"
+        val withCarriageReturn = "text\rmore"
+
+        assertTrue(
+          json"""{"bs": "$withBackspace"}""".get("bs").string == Right("text\bmore"),
+          json"""{"ff": "$withFormFeed"}""".get("ff").string == Right("text\fmore"),
+          json"""{"cr": "$withCarriageReturn"}""".get("cr").string == Right("text\rmore")
+        )
+      },
+
+      test("handles Boolean in string literals") {
+        val t = true
+        val f = false
+
+        assertTrue(
+          json"""{"bool": "value=$t"}""".get("bool").string == Right("value=true"),
+          json"""{"bool": "value=$f"}""".get("bool").string == Right("value=false")
+        )
+      },
+
+      test("handles Long in string literals") {
+        val longVal = 9876543210L
+
+        assertTrue(
+          json"""{"long": "value=$longVal"}""".get("long").string == Right("value=9876543210")
+        )
+      },
+
+      test("handles BigDecimal in string literals") {
+        val bdVal = BigDecimal("123.456789")
+
+        assertTrue(
+          json"""{"bd": "value=$bdVal"}""".get("bd").string == Right("value=123.456789")
+        )
+      },
+
+      test("handles null in writeKeyOnly") {
+        assertTrue(
+          json"""{${null}: "value"}""".get("null").string == Right("value")
+        )
+      },
+
+      test("handles Boolean keys in writeKeyOnly") {
+        assertTrue(
+          json"""{${true}: "t", ${false}: "f"}""".get("true").string == Right("t"),
+          json"""{${true}: "t", ${false}: "f"}""".get("false").string == Right("f")
+        )
+      },
+
+      test("handles Byte keys in writeKeyOnly") {
+        val b: Byte = 42
+        assertTrue(
+          json"""{$b: "byte"}""".get("42").string == Right("byte")
+        )
+      },
+
+      test("handles Short keys in writeKeyOnly") {
+        val s: Short = 1234
+        assertTrue(
+          json"""{$s: "short"}""".get("1234").string == Right("short")
+        )
+      },
+
+      test("handles Int keys in writeKeyOnly") {
+        val i = 99999
+        assertTrue(
+          json"""{$i: "int"}""".get("99999").string == Right("int")
+        )
+      },
+
+      test("handles Long keys in writeKeyOnly") {
+        val l = 9876543210L
+        assertTrue(
+          json"""{$l: "long"}""".get("9876543210").string == Right("long")
+        )
+      },
+
+      test("handles Year keys") {
+        val year = Year.of(2024)
+        assertTrue(
+          json"""{$year: "value"}""".get("2024").string == Right("value")
+        )
+      },
+
+      test("handles YearMonth keys") {
+        val ym = YearMonth.of(2024, 6)
+        assertTrue(
+          json"""{$ym: "value"}""".get("2024-06").string == Right("value")
+        )
+      },
+
+      test("handles escaped backslashes in string detection") {
+        // Test the backslash counting logic in isInStringLiteral - line 92-93, 98
+        val withEscapedQuote = """text with \" quote"""
+        assertTrue(
+          json"""{"escaped": "$withEscapedQuote"}""".get("escaped").string == Right("""text with \" quote""")
+        )
+      },
+      
+      test("detects string literal from before context") {
+        // Test line 70 - isInStringLiteral(before) branch
+        val value = "test"
+        // Create a case where before text contains unescaped quotes
+        assertTrue(
+          json"""{"a": "text $value more"}""".get("a").string == Right("text test more")
+        )
+      }
     )
   )
 }
