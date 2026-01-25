@@ -150,8 +150,8 @@ object JsonInterpolatorRuntime {
     case sh: Short           => out.write(sh.toString)
     case i: Int              => out.write(i.toString)
     case l: Long             => out.write(l.toString)
-    case f: Float            => out.write(f.toString)
-    case d: Double           => out.write(d.toString)
+    case f: Float            => out.write(f.toString)                                              // Use toString to handle NaN/Infinity gracefully
+    case d: Double           => out.write(d.toString)                                              // Use toString to handle NaN/Infinity gracefully
     case c: Char             => writeJsonEscapedString(out, c.toString)                            // Escape special chars
     case bd: BigDecimal      => out.write(bd.toString)
     case bi: BigInt          => out.write(bi.toString)
@@ -340,8 +340,12 @@ object JsonInterpolatorRuntime {
         JsonBinaryCodec.longCodec.encode(l, out)
         out.write('"')
       case f: Float =>
+        // Use codec for consistency with tests. NaN/Infinity will throw, but that's expected
+        // for direct value interpolation (not in Maps where writeKeyOnly is used)
         writeQuotedPrimitive(out, f, JsonBinaryCodec.floatCodec)
       case d: Double =>
+        // Use codec for consistency with tests. NaN/Infinity will throw, but that's expected
+        // for direct value interpolation (not in Maps where writeKeyOnly is used)
         writeQuotedPrimitive(out, d, JsonBinaryCodec.doubleCodec)
       case bd: BigDecimal =>
         out.write('"')
