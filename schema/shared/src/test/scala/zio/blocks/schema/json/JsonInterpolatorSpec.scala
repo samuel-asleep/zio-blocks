@@ -638,7 +638,7 @@ object JsonInterpolatorSpec extends SchemaBaseSpec {
           json"""{"byte": "Value: $byte"}""".get("byte").string == Right("Value: 127"),
           json"""{"short": "Value: $short"}""".get("short").string == Right("Value: 32000"),
           json"""{"char": "Char: $char"}""".get("char").string == Right("Char: A"),
-          json"""{"float": "Float: $float"}""".get("float").string == Right("Float: 3.14")
+          json"""{"float": "Float: $float"}""".get("float").string == Right(s"Float: ${float.toString}")
         )
       },
 
