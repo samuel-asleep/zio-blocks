@@ -241,10 +241,10 @@ object Person {
 
 ### Instance Overrides
 
-Use instance overrides to provide custom type-class instances for specific fields or nested types:
+Use instance overrides to provide custom type-class instances for specific fields or nested types. The optic syntax `$(_.field)` is provided by extending `CompanionOptics[A]`:
 
 ```scala mdoc:compile-only
-import zio.blocks.schema.Schema
+import zio.blocks.schema.{Schema, CompanionOptics}
 import zio.blocks.schema.json.{JsonFormat, JsonBinaryCodec}
 
 // Custom wrapper type with validation
@@ -259,15 +259,16 @@ object Email {
     .withTypeName[Email]
   
   // Custom codec with special handling
-  val customCodec: JsonBinaryCodec[Email] = ???
+  // For this example, we'll define a simple custom codec
+  val customCodec: JsonBinaryCodec[Email] = schema.derive(JsonFormat.deriver)
 }
 
 case class User(id: Long, email: Email)
 
-object User {
+object User extends CompanionOptics[User] {
   implicit val schema: Schema[User] = Schema.derived
   
-  // Override the derived codec for the Email field
+  // Override the derived codec for the Email field using the optic syntax
   val codec: JsonBinaryCodec[User] = schema
     .deriving(JsonFormat.deriver)
     .instance($(_.email), Email.customCodec)
@@ -275,14 +276,14 @@ object User {
 }
 ```
 
-In this example, we provide a custom `JsonBinaryCodec[Email]` for the `email` field instead of using the automatically derived one.
+In this example, we provide a custom `JsonBinaryCodec[Email]` for the `email` field instead of using the automatically derived one. The `$(_.email)` syntax is a type-safe way to create an optic that targets the `email` field, provided by the `CompanionOptics` trait.
 
 ### Multiple Overrides
 
 You can chain multiple `.instance()` calls to override different fields:
 
 ```scala mdoc:compile-only
-import zio.blocks.schema.Schema
+import zio.blocks.schema.{Schema, CompanionOptics}
 import zio.blocks.schema.json.{JsonFormat, JsonBinaryCodec}
 
 case class Custom1(value: String)
@@ -294,11 +295,12 @@ case class Complex(
   field3: String
 )
 
-object Complex {
+object Complex extends CompanionOptics[Complex] {
   implicit val schema: Schema[Complex] = Schema.derived
   
-  val custom1Codec: JsonBinaryCodec[Custom1] = ???
-  val custom2Codec: JsonBinaryCodec[Custom2] = ???
+  // Define custom codecs for Custom1 and Custom2
+  val custom1Codec: JsonBinaryCodec[Custom1] = Schema[Custom1].derive(JsonFormat.deriver)
+  val custom2Codec: JsonBinaryCodec[Custom2] = Schema[Custom2].derive(JsonFormat.deriver)
   
   val codec: JsonBinaryCodec[Complex] = schema
     .deriving(JsonFormat.deriver)
@@ -564,6 +566,7 @@ val person = Person("Alice", 30)
 The `Format` abstraction provides a unified interface for working with serialization formats:
 
 ```scala
+// From zio.blocks.schema.codec package
 trait Format {
   type TypeClass[A] <: Codec[A]
   type EncodeOutput
@@ -580,11 +583,14 @@ This abstraction enables you to write format-agnostic code:
 import zio.blocks.schema.Schema
 import zio.blocks.schema.codec.Format
 
-def encodeToFormat[A, F <: Format](schema: Schema[A], format: F)(value: A): Array[Byte] = {
-  val codec = schema.derive(format.deriver)
-  // Use codec to encode...
-  ???
-}
+def getMimeType[F <: Format](format: F): String = format.mimeType
+
+// Example usage with specific formats
+import zio.blocks.schema.json.JsonFormat
+import zio.blocks.schema.avro.AvroFormat
+
+val jsonMime = getMimeType(JsonFormat)    // "application/json"
+val avroMime = getMimeType(AvroFormat)    // "application/avro"
 ```
 
 ## Best Practices
@@ -642,18 +648,22 @@ object ApiResponse {
 
 ### 4. Leverage the Fluent API for Complex Cases
 
-For complex derivations with instance overrides, use the fluent API:
+For complex derivations with instance overrides, use the fluent API. Remember to extend `CompanionOptics[A]` for type-safe field selection:
 
 ```scala mdoc:compile-only
-import zio.blocks.schema.Schema
+import zio.blocks.schema.{Schema, CompanionOptics}
 import zio.blocks.schema.json.{JsonFormat, JsonBinaryCodec}
 import java.time.Instant
 
 case class CustomInstant(value: Instant)
 
 object CustomInstant {
-  implicit val schema: Schema[CustomInstant] = ???
-  val customCodec: JsonBinaryCodec[CustomInstant] = ???
+  implicit val schema: Schema[CustomInstant] = Schema[Instant]
+    .transform(CustomInstant(_), _.value)
+    .withTypeName[CustomInstant]
+  
+  // Custom codec with special formatting
+  val customCodec: JsonBinaryCodec[CustomInstant] = schema.derive(JsonFormat.deriver)
 }
 
 case class Event(
@@ -662,7 +672,7 @@ case class Event(
   data: String
 )
 
-object Event {
+object Event extends CompanionOptics[Event] {
   implicit val schema: Schema[Event] = Schema.derived
   
   val codec: JsonBinaryCodec[Event] = schema
