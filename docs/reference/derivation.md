@@ -95,7 +95,7 @@ object Event {
 
 ## Configuring Derivers
 
-Many derivers support configuration options. For JSON, you can customize field naming, discriminator handling, and more by configuring the `JsonFormat.deriver` and then calling `.derive`.
+Many derivers support configuration options. For JSON, you can customize field naming, discriminator handling, and more by configuring `JsonFormat.deriver` before calling `schema.derive`.
 
 ### Field Name Mapping
 
