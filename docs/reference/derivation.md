@@ -454,7 +454,7 @@ object PrettyPrinter {
           val deconstructor = binding.deconstructor
           val fieldValues = fields.map { field =>
             val fieldValue = deconstructor.projectDynamic(value, field.label)
-            val printer = instance(field.reflect).value
+            val printer = D.instance(field.reflect).value
             s"${field.label} = ${printer.print(fieldValue.asInstanceOf[field.A])}"
           }
           s"${typeName.shortName}(${fieldValues.mkString(", ")})"
@@ -475,7 +475,7 @@ object PrettyPrinter {
           val caseIndex = deconstructor.indexOf(value)
           val selectedCase = cases(caseIndex)
           val caseValue = deconstructor.projectDynamic(value, caseIndex)
-          val printer = instance(selectedCase.reflect).value
+          val printer = D.instance(selectedCase.reflect).value
           printer.print(caseValue.asInstanceOf[selectedCase.A])
         }
       }
@@ -490,7 +490,7 @@ object PrettyPrinter {
     )(implicit F: HasBinding[F], D: HasInstance[F]): Lazy[PrettyPrinter[C[A]]] = Lazy {
       new PrettyPrinter[C[A]] {
         def print(value: C[A]): String = {
-          val printer = instance(element).value
+          val printer = D.instance(element).value
           val elements = binding.deconstructor.toChunk(value)
           s"[${elements.map(printer.print).mkString(", ")}]"
         }
@@ -507,8 +507,8 @@ object PrettyPrinter {
     )(implicit F: HasBinding[F], D: HasInstance[F]): Lazy[PrettyPrinter[M[K, V]]] = Lazy {
       new PrettyPrinter[M[K, V]] {
         def print(value: M[K, V]): String = {
-          val keyPrinter = instance(key).value
-          val valuePrinter = instance(value).value
+          val keyPrinter = D.instance(key).value
+          val valuePrinter = D.instance(value).value
           val entries = binding.deconstructor.toChunk(value)
           val entryStrings = entries.map { case (k, v) =>
             s"${keyPrinter.print(k)} -> ${valuePrinter.print(v)}"
@@ -539,7 +539,7 @@ object PrettyPrinter {
       new PrettyPrinter[A] {
         def print(value: A): String = {
           val unwrapped = binding.deconstructor.unwrap(value)
-          val printer = instance(wrapped).value
+          val printer = D.instance(wrapped).value
           printer.print(unwrapped)
         }
       }
