@@ -7,21 +7,25 @@ import zio.blocks.schema.binding.RegisterOffset.RegisterOffset
 import zio.blocks.typeid.TypeId
 
 /**
- * A converter between two primitive types. Used in [[MigrationAction.ChangeType]]
- * to change the primitive type of a value at a given path.
+ * A converter between two primitive types. Used in
+ * [[MigrationAction.ChangeType]] to change the primitive type of a value at a
+ * given path.
  *
  * @example
- * {{{
+ *   {{{
  * val result = TypeConverter.IntToString(PrimitiveValue.Int(42))
  * // Right(PrimitiveValue.String("42"))
  *
  * val back = TypeConverter.IntToString.reverse(PrimitiveValue.String("42"))
  * // Right(PrimitiveValue.Int(42))
- * }}}
+ *   }}}
  */
 sealed trait TypeConverter {
 
-  /** Applies this converter to a [[PrimitiveValue]], returning the result or an error. */
+  /**
+   * Applies this converter to a [[PrimitiveValue]], returning the result or an
+   * error.
+   */
   def apply(value: PrimitiveValue): Either[SchemaError, PrimitiveValue]
 
   /** Returns the structural inverse of this converter. */
@@ -29,6 +33,7 @@ sealed trait TypeConverter {
 }
 
 object TypeConverter {
+
   /** Converts an `Int` to its decimal `String` representation. */
   case object IntToString extends TypeConverter {
     def apply(v: PrimitiveValue): Either[SchemaError, PrimitiveValue] = v match {
@@ -38,7 +43,9 @@ object TypeConverter {
     def reverse: TypeConverter = StringToInt
   }
 
-  /** Parses a `String` as an `Int`. Fails if the string is not a valid integer. */
+  /**
+   * Parses a `String` as an `Int`. Fails if the string is not a valid integer.
+   */
   case object StringToInt extends TypeConverter {
     def apply(v: PrimitiveValue): Either[SchemaError, PrimitiveValue] = v match {
       case PrimitiveValue.String(s) =>
@@ -60,7 +67,10 @@ object TypeConverter {
     def reverse: TypeConverter = StringToLong
   }
 
-  /** Parses a `String` as a `Long`. Fails if the string is not a valid long integer. */
+  /**
+   * Parses a `String` as a `Long`. Fails if the string is not a valid long
+   * integer.
+   */
   case object StringToLong extends TypeConverter {
     def apply(v: PrimitiveValue): Either[SchemaError, PrimitiveValue] = v match {
       case PrimitiveValue.String(s) =>
@@ -100,7 +110,9 @@ object TypeConverter {
     def reverse: TypeConverter = StringToDouble
   }
 
-  /** Parses a `String` as a `Double`. Fails if the string is not a valid double. */
+  /**
+   * Parses a `String` as a `Double`. Fails if the string is not a valid double.
+   */
   case object StringToDouble extends TypeConverter {
     def apply(v: PrimitiveValue): Either[SchemaError, PrimitiveValue] = v match {
       case PrimitiveValue.String(s) =>
@@ -131,7 +143,10 @@ object TypeConverter {
     def reverse: TypeConverter = FloatToDouble
   }
 
-  /** Converts a `Boolean` to its `String` representation (`"true"` or `"false"`). */
+  /**
+   * Converts a `Boolean` to its `String` representation (`"true"` or
+   * `"false"`).
+   */
   case object BoolToString extends TypeConverter {
     def apply(v: PrimitiveValue): Either[SchemaError, PrimitiveValue] = v match {
       case PrimitiveValue.Boolean(b) => Right(PrimitiveValue.String(b.toString))
@@ -140,7 +155,10 @@ object TypeConverter {
     def reverse: TypeConverter = StringToBool
   }
 
-  /** Parses a `String` as a `Boolean`. Accepts `"true"` / `"false"` (case-insensitive). Fails otherwise. */
+  /**
+   * Parses a `String` as a `Boolean`. Accepts `"true"` / `"false"`
+   * (case-insensitive). Fails otherwise.
+   */
   case object StringToBool extends TypeConverter {
     def apply(v: PrimitiveValue): Either[SchemaError, PrimitiveValue] = v match {
       case PrimitiveValue.String(s) =>
@@ -160,11 +178,12 @@ object TypeConverter {
       typeId = TypeId.of[TypeConverter.IntToString.type],
       recordBinding = new Binding.Record(
         constructor = new Constructor[TypeConverter.IntToString.type] {
-          def usedRegisters: RegisterOffset                                                   = RegisterOffset()
-          def construct(in: Registers, offset: RegisterOffset): TypeConverter.IntToString.type = TypeConverter.IntToString
+          def usedRegisters: RegisterOffset                                                    = RegisterOffset()
+          def construct(in: Registers, offset: RegisterOffset): TypeConverter.IntToString.type =
+            TypeConverter.IntToString
         },
         deconstructor = new Deconstructor[TypeConverter.IntToString.type] {
-          def usedRegisters: RegisterOffset = RegisterOffset()
+          def usedRegisters: RegisterOffset                                                                 = RegisterOffset()
           def deconstruct(out: Registers, offset: RegisterOffset, in: TypeConverter.IntToString.type): Unit = ()
         }
       ),
@@ -178,11 +197,12 @@ object TypeConverter {
       typeId = TypeId.of[TypeConverter.StringToInt.type],
       recordBinding = new Binding.Record(
         constructor = new Constructor[TypeConverter.StringToInt.type] {
-          def usedRegisters: RegisterOffset                                                   = RegisterOffset()
-          def construct(in: Registers, offset: RegisterOffset): TypeConverter.StringToInt.type = TypeConverter.StringToInt
+          def usedRegisters: RegisterOffset                                                    = RegisterOffset()
+          def construct(in: Registers, offset: RegisterOffset): TypeConverter.StringToInt.type =
+            TypeConverter.StringToInt
         },
         deconstructor = new Deconstructor[TypeConverter.StringToInt.type] {
-          def usedRegisters: RegisterOffset = RegisterOffset()
+          def usedRegisters: RegisterOffset                                                                 = RegisterOffset()
           def deconstruct(out: Registers, offset: RegisterOffset, in: TypeConverter.StringToInt.type): Unit = ()
         }
       ),
@@ -196,11 +216,12 @@ object TypeConverter {
       typeId = TypeId.of[TypeConverter.LongToString.type],
       recordBinding = new Binding.Record(
         constructor = new Constructor[TypeConverter.LongToString.type] {
-          def usedRegisters: RegisterOffset                                                    = RegisterOffset()
-          def construct(in: Registers, offset: RegisterOffset): TypeConverter.LongToString.type = TypeConverter.LongToString
+          def usedRegisters: RegisterOffset                                                     = RegisterOffset()
+          def construct(in: Registers, offset: RegisterOffset): TypeConverter.LongToString.type =
+            TypeConverter.LongToString
         },
         deconstructor = new Deconstructor[TypeConverter.LongToString.type] {
-          def usedRegisters: RegisterOffset = RegisterOffset()
+          def usedRegisters: RegisterOffset                                                                  = RegisterOffset()
           def deconstruct(out: Registers, offset: RegisterOffset, in: TypeConverter.LongToString.type): Unit = ()
         }
       ),
@@ -214,11 +235,12 @@ object TypeConverter {
       typeId = TypeId.of[TypeConverter.StringToLong.type],
       recordBinding = new Binding.Record(
         constructor = new Constructor[TypeConverter.StringToLong.type] {
-          def usedRegisters: RegisterOffset                                                    = RegisterOffset()
-          def construct(in: Registers, offset: RegisterOffset): TypeConverter.StringToLong.type = TypeConverter.StringToLong
+          def usedRegisters: RegisterOffset                                                     = RegisterOffset()
+          def construct(in: Registers, offset: RegisterOffset): TypeConverter.StringToLong.type =
+            TypeConverter.StringToLong
         },
         deconstructor = new Deconstructor[TypeConverter.StringToLong.type] {
-          def usedRegisters: RegisterOffset = RegisterOffset()
+          def usedRegisters: RegisterOffset                                                                  = RegisterOffset()
           def deconstruct(out: Registers, offset: RegisterOffset, in: TypeConverter.StringToLong.type): Unit = ()
         }
       ),
@@ -232,11 +254,11 @@ object TypeConverter {
       typeId = TypeId.of[TypeConverter.IntToLong.type],
       recordBinding = new Binding.Record(
         constructor = new Constructor[TypeConverter.IntToLong.type] {
-          def usedRegisters: RegisterOffset                                                 = RegisterOffset()
+          def usedRegisters: RegisterOffset                                                  = RegisterOffset()
           def construct(in: Registers, offset: RegisterOffset): TypeConverter.IntToLong.type = TypeConverter.IntToLong
         },
         deconstructor = new Deconstructor[TypeConverter.IntToLong.type] {
-          def usedRegisters: RegisterOffset = RegisterOffset()
+          def usedRegisters: RegisterOffset                                                               = RegisterOffset()
           def deconstruct(out: Registers, offset: RegisterOffset, in: TypeConverter.IntToLong.type): Unit = ()
         }
       ),
@@ -250,11 +272,11 @@ object TypeConverter {
       typeId = TypeId.of[TypeConverter.LongToInt.type],
       recordBinding = new Binding.Record(
         constructor = new Constructor[TypeConverter.LongToInt.type] {
-          def usedRegisters: RegisterOffset                                                 = RegisterOffset()
+          def usedRegisters: RegisterOffset                                                  = RegisterOffset()
           def construct(in: Registers, offset: RegisterOffset): TypeConverter.LongToInt.type = TypeConverter.LongToInt
         },
         deconstructor = new Deconstructor[TypeConverter.LongToInt.type] {
-          def usedRegisters: RegisterOffset = RegisterOffset()
+          def usedRegisters: RegisterOffset                                                               = RegisterOffset()
           def deconstruct(out: Registers, offset: RegisterOffset, in: TypeConverter.LongToInt.type): Unit = ()
         }
       ),
@@ -268,11 +290,12 @@ object TypeConverter {
       typeId = TypeId.of[TypeConverter.DoubleToString.type],
       recordBinding = new Binding.Record(
         constructor = new Constructor[TypeConverter.DoubleToString.type] {
-          def usedRegisters: RegisterOffset                                                      = RegisterOffset()
-          def construct(in: Registers, offset: RegisterOffset): TypeConverter.DoubleToString.type = TypeConverter.DoubleToString
+          def usedRegisters: RegisterOffset                                                       = RegisterOffset()
+          def construct(in: Registers, offset: RegisterOffset): TypeConverter.DoubleToString.type =
+            TypeConverter.DoubleToString
         },
         deconstructor = new Deconstructor[TypeConverter.DoubleToString.type] {
-          def usedRegisters: RegisterOffset = RegisterOffset()
+          def usedRegisters: RegisterOffset                                                                    = RegisterOffset()
           def deconstruct(out: Registers, offset: RegisterOffset, in: TypeConverter.DoubleToString.type): Unit = ()
         }
       ),
@@ -286,11 +309,12 @@ object TypeConverter {
       typeId = TypeId.of[TypeConverter.StringToDouble.type],
       recordBinding = new Binding.Record(
         constructor = new Constructor[TypeConverter.StringToDouble.type] {
-          def usedRegisters: RegisterOffset                                                      = RegisterOffset()
-          def construct(in: Registers, offset: RegisterOffset): TypeConverter.StringToDouble.type = TypeConverter.StringToDouble
+          def usedRegisters: RegisterOffset                                                       = RegisterOffset()
+          def construct(in: Registers, offset: RegisterOffset): TypeConverter.StringToDouble.type =
+            TypeConverter.StringToDouble
         },
         deconstructor = new Deconstructor[TypeConverter.StringToDouble.type] {
-          def usedRegisters: RegisterOffset = RegisterOffset()
+          def usedRegisters: RegisterOffset                                                                    = RegisterOffset()
           def deconstruct(out: Registers, offset: RegisterOffset, in: TypeConverter.StringToDouble.type): Unit = ()
         }
       ),
@@ -304,11 +328,12 @@ object TypeConverter {
       typeId = TypeId.of[TypeConverter.FloatToDouble.type],
       recordBinding = new Binding.Record(
         constructor = new Constructor[TypeConverter.FloatToDouble.type] {
-          def usedRegisters: RegisterOffset                                                     = RegisterOffset()
-          def construct(in: Registers, offset: RegisterOffset): TypeConverter.FloatToDouble.type = TypeConverter.FloatToDouble
+          def usedRegisters: RegisterOffset                                                      = RegisterOffset()
+          def construct(in: Registers, offset: RegisterOffset): TypeConverter.FloatToDouble.type =
+            TypeConverter.FloatToDouble
         },
         deconstructor = new Deconstructor[TypeConverter.FloatToDouble.type] {
-          def usedRegisters: RegisterOffset = RegisterOffset()
+          def usedRegisters: RegisterOffset                                                                   = RegisterOffset()
           def deconstruct(out: Registers, offset: RegisterOffset, in: TypeConverter.FloatToDouble.type): Unit = ()
         }
       ),
@@ -322,11 +347,12 @@ object TypeConverter {
       typeId = TypeId.of[TypeConverter.DoubleToFloat.type],
       recordBinding = new Binding.Record(
         constructor = new Constructor[TypeConverter.DoubleToFloat.type] {
-          def usedRegisters: RegisterOffset                                                     = RegisterOffset()
-          def construct(in: Registers, offset: RegisterOffset): TypeConverter.DoubleToFloat.type = TypeConverter.DoubleToFloat
+          def usedRegisters: RegisterOffset                                                      = RegisterOffset()
+          def construct(in: Registers, offset: RegisterOffset): TypeConverter.DoubleToFloat.type =
+            TypeConverter.DoubleToFloat
         },
         deconstructor = new Deconstructor[TypeConverter.DoubleToFloat.type] {
-          def usedRegisters: RegisterOffset = RegisterOffset()
+          def usedRegisters: RegisterOffset                                                                   = RegisterOffset()
           def deconstruct(out: Registers, offset: RegisterOffset, in: TypeConverter.DoubleToFloat.type): Unit = ()
         }
       ),
@@ -340,11 +366,12 @@ object TypeConverter {
       typeId = TypeId.of[TypeConverter.BoolToString.type],
       recordBinding = new Binding.Record(
         constructor = new Constructor[TypeConverter.BoolToString.type] {
-          def usedRegisters: RegisterOffset                                                   = RegisterOffset()
-          def construct(in: Registers, offset: RegisterOffset): TypeConverter.BoolToString.type = TypeConverter.BoolToString
+          def usedRegisters: RegisterOffset                                                     = RegisterOffset()
+          def construct(in: Registers, offset: RegisterOffset): TypeConverter.BoolToString.type =
+            TypeConverter.BoolToString
         },
         deconstructor = new Deconstructor[TypeConverter.BoolToString.type] {
-          def usedRegisters: RegisterOffset = RegisterOffset()
+          def usedRegisters: RegisterOffset                                                                  = RegisterOffset()
           def deconstruct(out: Registers, offset: RegisterOffset, in: TypeConverter.BoolToString.type): Unit = ()
         }
       ),
@@ -358,11 +385,12 @@ object TypeConverter {
       typeId = TypeId.of[TypeConverter.StringToBool.type],
       recordBinding = new Binding.Record(
         constructor = new Constructor[TypeConverter.StringToBool.type] {
-          def usedRegisters: RegisterOffset                                                   = RegisterOffset()
-          def construct(in: Registers, offset: RegisterOffset): TypeConverter.StringToBool.type = TypeConverter.StringToBool
+          def usedRegisters: RegisterOffset                                                     = RegisterOffset()
+          def construct(in: Registers, offset: RegisterOffset): TypeConverter.StringToBool.type =
+            TypeConverter.StringToBool
         },
         deconstructor = new Deconstructor[TypeConverter.StringToBool.type] {
-          def usedRegisters: RegisterOffset = RegisterOffset()
+          def usedRegisters: RegisterOffset                                                                  = RegisterOffset()
           def deconstruct(out: Registers, offset: RegisterOffset, in: TypeConverter.StringToBool.type): Unit = ()
         }
       ),
@@ -502,19 +530,26 @@ sealed trait MigrationAction {
 
 object MigrationAction {
 
-  /** Inserts a new field at path `at` with the given default value. Reverse is [[DropField]]. */
+  /**
+   * Inserts a new field at path `at` with the given default value. Reverse is
+   * [[DropField]].
+   */
   final case class AddField(at: DynamicOptic, default: DynamicValue) extends MigrationAction {
     def reverse: MigrationAction = DropField(at, default)
   }
 
-  /** Removes the field at path `at`. Reverse is [[AddField]] using `defaultForReverse`. */
+  /**
+   * Removes the field at path `at`. Reverse is [[AddField]] using
+   * `defaultForReverse`.
+   */
   final case class DropField(at: DynamicOptic, defaultForReverse: DynamicValue) extends MigrationAction {
     def reverse: MigrationAction = AddField(at, defaultForReverse)
   }
 
   /**
-   * Renames a field. The path `at` must end in a [[DynamicOptic.Node.Field]] node whose name
-   * is the original field name. Reverse renames `to` back to the original name.
+   * Renames a field. The path `at` must end in a [[DynamicOptic.Node.Field]]
+   * node whose name is the original field name. Reverse renames `to` back to
+   * the original name.
    */
   final case class Rename(at: DynamicOptic, to: String) extends MigrationAction {
     def reverse: MigrationAction = {
@@ -525,35 +560,42 @@ object MigrationAction {
     }
   }
 
-  /** Applies a nested migration to the value at path `at`. Reverse applies `transform.reverse`. */
+  /**
+   * Applies a nested migration to the value at path `at`. Reverse applies
+   * `transform.reverse`.
+   */
   final case class TransformValue(at: DynamicOptic, transform: DynamicMigration) extends MigrationAction {
     def reverse: MigrationAction = TransformValue(at, transform.reverse)
   }
 
   /**
-   * Makes an optional field (wrapped in `Some`/`None`) required. If the value is `None`, the
-   * migration fails. Reverse is [[Optionalize]].
+   * Makes an optional field (wrapped in `Some`/`None`) required. If the value
+   * is `None`, the migration fails. Reverse is [[Optionalize]].
    */
   final case class Mandate(at: DynamicOptic, default: DynamicValue) extends MigrationAction {
     def reverse: MigrationAction = Optionalize(at)
   }
 
   /**
-   * Makes a required field optional by wrapping it in `Some`. Reverse is [[Mandate]] with
-   * a `Null` default.
+   * Makes a required field optional by wrapping it in `Some`. Reverse is
+   * [[Mandate]] with a `Null` default.
    */
   final case class Optionalize(at: DynamicOptic) extends MigrationAction {
     def reverse: MigrationAction = Mandate(at, DynamicValue.Null)
   }
 
-  /** Changes the primitive type of the value at path `at` using `converter`. Reverse uses the inverse converter. */
+  /**
+   * Changes the primitive type of the value at path `at` using `converter`.
+   * Reverse uses the inverse converter.
+   */
   final case class ChangeType(at: DynamicOptic, converter: TypeConverter) extends MigrationAction {
     def reverse: MigrationAction = ChangeType(at, converter.reverse)
   }
 
   /**
-   * Renames an enum case. The path `at` must end in a [[DynamicOptic.Node.Case]] node identifying
-   * the original case name. Reverse renames `to` back to the original name.
+   * Renames an enum case. The path `at` must end in a
+   * [[DynamicOptic.Node.Case]] node identifying the original case name. Reverse
+   * renames `to` back to the original name.
    */
   final case class RenameCase(at: DynamicOptic, to: String) extends MigrationAction {
     def reverse: MigrationAction = {
@@ -565,24 +607,34 @@ object MigrationAction {
   }
 
   /**
-   * Applies a sub-migration to the value inside an enum case. The path `at` must end in a
-   * [[DynamicOptic.Node.Case]] node. Reverse applies the reversed sub-actions in reverse order.
+   * Applies a sub-migration to the value inside an enum case. The path `at`
+   * must end in a [[DynamicOptic.Node.Case]] node. Reverse applies the reversed
+   * sub-actions in reverse order.
    */
   final case class TransformCase(at: DynamicOptic, actions: Vector[MigrationAction]) extends MigrationAction {
     def reverse: MigrationAction = TransformCase(at, actions.reverse.map(_.reverse))
   }
 
-  /** Transforms each element of the sequence at path `at`. Reverse applies `transform.reverse`. */
+  /**
+   * Transforms each element of the sequence at path `at`. Reverse applies
+   * `transform.reverse`.
+   */
   final case class TransformElements(at: DynamicOptic, transform: DynamicMigration) extends MigrationAction {
     def reverse: MigrationAction = TransformElements(at, transform.reverse)
   }
 
-  /** Transforms each key of the map at path `at`. Reverse applies `transform.reverse`. */
+  /**
+   * Transforms each key of the map at path `at`. Reverse applies
+   * `transform.reverse`.
+   */
   final case class TransformKeys(at: DynamicOptic, transform: DynamicMigration) extends MigrationAction {
     def reverse: MigrationAction = TransformKeys(at, transform.reverse)
   }
 
-  /** Transforms each value of the map at path `at`. Reverse applies `transform.reverse`. */
+  /**
+   * Transforms each value of the map at path `at`. Reverse applies
+   * `transform.reverse`.
+   */
   final case class TransformValues(at: DynamicOptic, transform: DynamicMigration) extends MigrationAction {
     def reverse: MigrationAction = TransformValues(at, transform.reverse)
   }
@@ -600,7 +652,7 @@ object MigrationAction {
       typeId = TypeId.of[AddField],
       recordBinding = new Binding.Record(
         constructor = new Constructor[AddField] {
-          def usedRegisters: RegisterOffset               = RegisterOffset(objects = 2)
+          def usedRegisters: RegisterOffset                              = RegisterOffset(objects = 2)
           def construct(in: Registers, offset: RegisterOffset): AddField =
             new AddField(
               in.getObject(offset).asInstanceOf[DynamicOptic],
@@ -608,7 +660,7 @@ object MigrationAction {
             )
         },
         deconstructor = new Deconstructor[AddField] {
-          def usedRegisters: RegisterOffset                                        = RegisterOffset(objects = 2)
+          def usedRegisters: RegisterOffset                                           = RegisterOffset(objects = 2)
           def deconstruct(out: Registers, offset: RegisterOffset, in: AddField): Unit = {
             out.setObject(offset, in.at)
             out.setObject(RegisterOffset.incrementObjects(offset), in.default)
@@ -628,7 +680,7 @@ object MigrationAction {
       typeId = TypeId.of[DropField],
       recordBinding = new Binding.Record(
         constructor = new Constructor[DropField] {
-          def usedRegisters: RegisterOffset                = RegisterOffset(objects = 2)
+          def usedRegisters: RegisterOffset                               = RegisterOffset(objects = 2)
           def construct(in: Registers, offset: RegisterOffset): DropField =
             new DropField(
               in.getObject(offset).asInstanceOf[DynamicOptic],
@@ -636,7 +688,7 @@ object MigrationAction {
             )
         },
         deconstructor = new Deconstructor[DropField] {
-          def usedRegisters: RegisterOffset                                         = RegisterOffset(objects = 2)
+          def usedRegisters: RegisterOffset                                            = RegisterOffset(objects = 2)
           def deconstruct(out: Registers, offset: RegisterOffset, in: DropField): Unit = {
             out.setObject(offset, in.at)
             out.setObject(RegisterOffset.incrementObjects(offset), in.defaultForReverse)
@@ -656,7 +708,7 @@ object MigrationAction {
       typeId = TypeId.of[Rename],
       recordBinding = new Binding.Record(
         constructor = new Constructor[Rename] {
-          def usedRegisters: RegisterOffset              = RegisterOffset(objects = 2)
+          def usedRegisters: RegisterOffset                            = RegisterOffset(objects = 2)
           def construct(in: Registers, offset: RegisterOffset): Rename =
             new Rename(
               in.getObject(offset).asInstanceOf[DynamicOptic],
@@ -664,7 +716,7 @@ object MigrationAction {
             )
         },
         deconstructor = new Deconstructor[Rename] {
-          def usedRegisters: RegisterOffset                                       = RegisterOffset(objects = 2)
+          def usedRegisters: RegisterOffset                                         = RegisterOffset(objects = 2)
           def deconstruct(out: Registers, offset: RegisterOffset, in: Rename): Unit = {
             out.setObject(offset, in.at)
             out.setObject(RegisterOffset.incrementObjects(offset), in.to)
@@ -684,7 +736,7 @@ object MigrationAction {
       typeId = TypeId.of[TransformValue],
       recordBinding = new Binding.Record(
         constructor = new Constructor[TransformValue] {
-          def usedRegisters: RegisterOffset                    = RegisterOffset(objects = 2)
+          def usedRegisters: RegisterOffset                                    = RegisterOffset(objects = 2)
           def construct(in: Registers, offset: RegisterOffset): TransformValue =
             new TransformValue(
               in.getObject(offset).asInstanceOf[DynamicOptic],
@@ -692,7 +744,7 @@ object MigrationAction {
             )
         },
         deconstructor = new Deconstructor[TransformValue] {
-          def usedRegisters: RegisterOffset                                             = RegisterOffset(objects = 2)
+          def usedRegisters: RegisterOffset                                                 = RegisterOffset(objects = 2)
           def deconstruct(out: Registers, offset: RegisterOffset, in: TransformValue): Unit = {
             out.setObject(offset, in.at)
             out.setObject(RegisterOffset.incrementObjects(offset), in.transform)
@@ -712,7 +764,7 @@ object MigrationAction {
       typeId = TypeId.of[Mandate],
       recordBinding = new Binding.Record(
         constructor = new Constructor[Mandate] {
-          def usedRegisters: RegisterOffset               = RegisterOffset(objects = 2)
+          def usedRegisters: RegisterOffset                             = RegisterOffset(objects = 2)
           def construct(in: Registers, offset: RegisterOffset): Mandate =
             new Mandate(
               in.getObject(offset).asInstanceOf[DynamicOptic],
@@ -720,7 +772,7 @@ object MigrationAction {
             )
         },
         deconstructor = new Deconstructor[Mandate] {
-          def usedRegisters: RegisterOffset                                        = RegisterOffset(objects = 2)
+          def usedRegisters: RegisterOffset                                          = RegisterOffset(objects = 2)
           def deconstruct(out: Registers, offset: RegisterOffset, in: Mandate): Unit = {
             out.setObject(offset, in.at)
             out.setObject(RegisterOffset.incrementObjects(offset), in.default)
@@ -737,12 +789,12 @@ object MigrationAction {
       typeId = TypeId.of[Optionalize],
       recordBinding = new Binding.Record(
         constructor = new Constructor[Optionalize] {
-          def usedRegisters: RegisterOffset                   = RegisterOffset(objects = 1)
+          def usedRegisters: RegisterOffset                                 = RegisterOffset(objects = 1)
           def construct(in: Registers, offset: RegisterOffset): Optionalize =
             new Optionalize(in.getObject(offset).asInstanceOf[DynamicOptic])
         },
         deconstructor = new Deconstructor[Optionalize] {
-          def usedRegisters: RegisterOffset                                           = RegisterOffset(objects = 1)
+          def usedRegisters: RegisterOffset                                              = RegisterOffset(objects = 1)
           def deconstruct(out: Registers, offset: RegisterOffset, in: Optionalize): Unit =
             out.setObject(offset, in.at)
         }
@@ -760,7 +812,7 @@ object MigrationAction {
       typeId = TypeId.of[ChangeType],
       recordBinding = new Binding.Record(
         constructor = new Constructor[ChangeType] {
-          def usedRegisters: RegisterOffset                  = RegisterOffset(objects = 2)
+          def usedRegisters: RegisterOffset                                = RegisterOffset(objects = 2)
           def construct(in: Registers, offset: RegisterOffset): ChangeType =
             new ChangeType(
               in.getObject(offset).asInstanceOf[DynamicOptic],
@@ -768,7 +820,7 @@ object MigrationAction {
             )
         },
         deconstructor = new Deconstructor[ChangeType] {
-          def usedRegisters: RegisterOffset                                          = RegisterOffset(objects = 2)
+          def usedRegisters: RegisterOffset                                             = RegisterOffset(objects = 2)
           def deconstruct(out: Registers, offset: RegisterOffset, in: ChangeType): Unit = {
             out.setObject(offset, in.at)
             out.setObject(RegisterOffset.incrementObjects(offset), in.converter)
@@ -788,7 +840,7 @@ object MigrationAction {
       typeId = TypeId.of[RenameCase],
       recordBinding = new Binding.Record(
         constructor = new Constructor[RenameCase] {
-          def usedRegisters: RegisterOffset                  = RegisterOffset(objects = 2)
+          def usedRegisters: RegisterOffset                                = RegisterOffset(objects = 2)
           def construct(in: Registers, offset: RegisterOffset): RenameCase =
             new RenameCase(
               in.getObject(offset).asInstanceOf[DynamicOptic],
@@ -796,7 +848,7 @@ object MigrationAction {
             )
         },
         deconstructor = new Deconstructor[RenameCase] {
-          def usedRegisters: RegisterOffset                                          = RegisterOffset(objects = 2)
+          def usedRegisters: RegisterOffset                                             = RegisterOffset(objects = 2)
           def deconstruct(out: Registers, offset: RegisterOffset, in: RenameCase): Unit = {
             out.setObject(offset, in.at)
             out.setObject(RegisterOffset.incrementObjects(offset), in.to)
@@ -816,7 +868,7 @@ object MigrationAction {
       typeId = TypeId.of[TransformCase],
       recordBinding = new Binding.Record(
         constructor = new Constructor[TransformCase] {
-          def usedRegisters: RegisterOffset                   = RegisterOffset(objects = 2)
+          def usedRegisters: RegisterOffset                                   = RegisterOffset(objects = 2)
           def construct(in: Registers, offset: RegisterOffset): TransformCase =
             new TransformCase(
               in.getObject(offset).asInstanceOf[DynamicOptic],
@@ -824,7 +876,7 @@ object MigrationAction {
             )
         },
         deconstructor = new Deconstructor[TransformCase] {
-          def usedRegisters: RegisterOffset                                           = RegisterOffset(objects = 2)
+          def usedRegisters: RegisterOffset                                                = RegisterOffset(objects = 2)
           def deconstruct(out: Registers, offset: RegisterOffset, in: TransformCase): Unit = {
             out.setObject(offset, in.at)
             out.setObject(RegisterOffset.incrementObjects(offset), in.actions)
@@ -844,7 +896,7 @@ object MigrationAction {
       typeId = TypeId.of[TransformElements],
       recordBinding = new Binding.Record(
         constructor = new Constructor[TransformElements] {
-          def usedRegisters: RegisterOffset                       = RegisterOffset(objects = 2)
+          def usedRegisters: RegisterOffset                                       = RegisterOffset(objects = 2)
           def construct(in: Registers, offset: RegisterOffset): TransformElements =
             new TransformElements(
               in.getObject(offset).asInstanceOf[DynamicOptic],
@@ -852,7 +904,7 @@ object MigrationAction {
             )
         },
         deconstructor = new Deconstructor[TransformElements] {
-          def usedRegisters: RegisterOffset                                               = RegisterOffset(objects = 2)
+          def usedRegisters: RegisterOffset                                                    = RegisterOffset(objects = 2)
           def deconstruct(out: Registers, offset: RegisterOffset, in: TransformElements): Unit = {
             out.setObject(offset, in.at)
             out.setObject(RegisterOffset.incrementObjects(offset), in.transform)
@@ -872,7 +924,7 @@ object MigrationAction {
       typeId = TypeId.of[TransformKeys],
       recordBinding = new Binding.Record(
         constructor = new Constructor[TransformKeys] {
-          def usedRegisters: RegisterOffset                    = RegisterOffset(objects = 2)
+          def usedRegisters: RegisterOffset                                   = RegisterOffset(objects = 2)
           def construct(in: Registers, offset: RegisterOffset): TransformKeys =
             new TransformKeys(
               in.getObject(offset).asInstanceOf[DynamicOptic],
@@ -880,7 +932,7 @@ object MigrationAction {
             )
         },
         deconstructor = new Deconstructor[TransformKeys] {
-          def usedRegisters: RegisterOffset                                          = RegisterOffset(objects = 2)
+          def usedRegisters: RegisterOffset                                                = RegisterOffset(objects = 2)
           def deconstruct(out: Registers, offset: RegisterOffset, in: TransformKeys): Unit = {
             out.setObject(offset, in.at)
             out.setObject(RegisterOffset.incrementObjects(offset), in.transform)
@@ -900,7 +952,7 @@ object MigrationAction {
       typeId = TypeId.of[TransformValues],
       recordBinding = new Binding.Record(
         constructor = new Constructor[TransformValues] {
-          def usedRegisters: RegisterOffset                      = RegisterOffset(objects = 2)
+          def usedRegisters: RegisterOffset                                     = RegisterOffset(objects = 2)
           def construct(in: Registers, offset: RegisterOffset): TransformValues =
             new TransformValues(
               in.getObject(offset).asInstanceOf[DynamicOptic],
@@ -908,7 +960,7 @@ object MigrationAction {
             )
         },
         deconstructor = new Deconstructor[TransformValues] {
-          def usedRegisters: RegisterOffset                                            = RegisterOffset(objects = 2)
+          def usedRegisters: RegisterOffset                                                  = RegisterOffset(objects = 2)
           def deconstruct(out: Registers, offset: RegisterOffset, in: TransformValues): Unit = {
             out.setObject(offset, in.at)
             out.setObject(RegisterOffset.incrementObjects(offset), in.transform)
@@ -939,18 +991,18 @@ object MigrationAction {
       variantBinding = new Binding.Variant(
         discriminator = new Discriminator[MigrationAction] {
           def discriminate(a: MigrationAction): Int = a match {
-            case _: AddField        => 0
-            case _: DropField       => 1
-            case _: Rename          => 2
-            case _: TransformValue  => 3
-            case _: Mandate         => 4
-            case _: Optionalize     => 5
-            case _: ChangeType      => 6
-            case _: RenameCase      => 7
-            case _: TransformCase   => 8
+            case _: AddField          => 0
+            case _: DropField         => 1
+            case _: Rename            => 2
+            case _: TransformValue    => 3
+            case _: Mandate           => 4
+            case _: Optionalize       => 5
+            case _: ChangeType        => 6
+            case _: RenameCase        => 7
+            case _: TransformCase     => 8
             case _: TransformElements => 9
-            case _: TransformKeys   => 10
-            case _: TransformValues => 11
+            case _: TransformKeys     => 10
+            case _: TransformValues   => 11
           }
         },
         matchers = Matchers(

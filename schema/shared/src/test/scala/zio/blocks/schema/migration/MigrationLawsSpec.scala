@@ -11,19 +11,20 @@ import zio.test._
  */
 object MigrationLawsSpec extends SchemaBaseSpec {
 
-  private def prim(n: Int): DynamicValue     = DynamicValue.Primitive(PrimitiveValue.Int(n))
-  private def primS(s: String): DynamicValue = DynamicValue.Primitive(PrimitiveValue.String(s))
+  private def prim(n: Int): DynamicValue                            = DynamicValue.Primitive(PrimitiveValue.Int(n))
+  private def primS(s: String): DynamicValue                        = DynamicValue.Primitive(PrimitiveValue.String(s))
   private def record(fields: (String, DynamicValue)*): DynamicValue =
     DynamicValue.Record(Chunk.from(fields))
 
   private val value1 = record("n" -> prim(1), "s" -> primS("hello"))
 
-  private val intToString = DynamicMigration(Vector(
-    MigrationAction.ChangeType(DynamicOptic.root.field("n"), TypeConverter.IntToString)
-  ))
+  private val intToString = DynamicMigration(
+    Vector(
+      MigrationAction.ChangeType(DynamicOptic.root.field("n"), TypeConverter.IntToString)
+    )
+  )
 
   def spec: Spec[Any, Any] = suite("MigrationLawsSpec")(
-
     suite("identity laws")(
       test("left identity: identity ++ m == m") {
         val m        = intToString
@@ -42,12 +43,16 @@ object MigrationLawsSpec extends SchemaBaseSpec {
 
     suite("composition associativity")(
       test("(a ++ b) ++ c == a ++ (b ++ c)") {
-        val renameN  = DynamicMigration(Vector(
-          MigrationAction.Rename(DynamicOptic.root.field("n"), "num")
-        ))
-        val addY     = DynamicMigration(Vector(
-          MigrationAction.AddField(DynamicOptic.root.field("y"), prim(99))
-        ))
+        val renameN = DynamicMigration(
+          Vector(
+            MigrationAction.Rename(DynamicOptic.root.field("n"), "num")
+          )
+        )
+        val addY = DynamicMigration(
+          Vector(
+            MigrationAction.AddField(DynamicOptic.root.field("y"), prim(99))
+          )
+        )
         val lhs = (intToString ++ renameN) ++ addY
         val rhs = intToString ++ (renameN ++ addY)
         assertTrue(lhs(value1) == rhs(value1))
@@ -56,9 +61,11 @@ object MigrationLawsSpec extends SchemaBaseSpec {
 
     suite("reverse laws")(
       test("reverse . forward == identity for AddField/DropField pair") {
-        val addField = DynamicMigration(Vector(
-          MigrationAction.AddField(DynamicOptic.root.field("z"), prim(0))
-        ))
+        val addField = DynamicMigration(
+          Vector(
+            MigrationAction.AddField(DynamicOptic.root.field("z"), prim(0))
+          )
+        )
         val before   = record("n" -> prim(1))
         val after    = addField(before)
         val reversed = addField.reverse
@@ -66,9 +73,11 @@ object MigrationLawsSpec extends SchemaBaseSpec {
       },
       test("reverse . forward == identity for Rename") {
         // Rename moves the field to the end, so compare sorted fields
-        val renameMig = DynamicMigration(Vector(
-          MigrationAction.Rename(DynamicOptic.root.field("n"), "num")
-        ))
+        val renameMig = DynamicMigration(
+          Vector(
+            MigrationAction.Rename(DynamicOptic.root.field("n"), "num")
+          )
+        )
         val after    = renameMig(value1)
         val reversed = renameMig.reverse
         val result   = after.flatMap(reversed(_))
@@ -82,9 +91,11 @@ object MigrationLawsSpec extends SchemaBaseSpec {
       },
       test("reverse . forward == identity for RenameCase") {
         val variantVal = record("dir" -> DynamicValue.Variant("North", DynamicValue.Null))
-        val renameMig  = DynamicMigration(Vector(
-          MigrationAction.RenameCase(DynamicOptic.root.field("dir").caseOf("North"), "Up")
-        ))
+        val renameMig  = DynamicMigration(
+          Vector(
+            MigrationAction.RenameCase(DynamicOptic.root.field("dir").caseOf("North"), "Up")
+          )
+        )
         val after    = renameMig(variantVal)
         val reversed = renameMig.reverse
         assertTrue(after.flatMap(reversed(_)) == Right(variantVal))
@@ -95,13 +106,89 @@ object MigrationLawsSpec extends SchemaBaseSpec {
       },
       test("reverse of composition reverses order") {
         val before    = record("n" -> prim(5))
-        val addExtra2 = DynamicMigration(Vector(
-          MigrationAction.AddField(DynamicOptic.root.field("extra"), primS("x"))
-        ))
-        val combined  = intToString ++ addExtra2
-        val migrated  = combined(before)
-        val rev       = combined.reverse
+        val addExtra2 = DynamicMigration(
+          Vector(
+            MigrationAction.AddField(DynamicOptic.root.field("extra"), primS("x"))
+          )
+        )
+        val combined = intToString ++ addExtra2
+        val migrated = combined(before)
+        val rev      = combined.reverse
         assertTrue(migrated.flatMap(rev(_)) == Right(before))
+      },
+      test("reverse of Optionalize is Mandate") {
+        val optMig = DynamicMigration(Vector(MigrationAction.Optionalize(DynamicOptic.root.field("n"))))
+        val before = record("n" -> prim(1))
+        val after  = optMig(before)
+        // Reverse of Optionalize wraps Mandate which unwraps Some
+        val rev = optMig.reverse
+        assertTrue(after.flatMap(rev(_)) == Right(before))
+      },
+      test("reverse of Mandate is Optionalize") {
+        val mandateMig = DynamicMigration(
+          Vector(MigrationAction.Mandate(DynamicOptic.root.field("n"), DynamicValue.Null))
+        )
+        // Start with a Some-wrapped value
+        val before = record("n" -> DynamicValue.Variant("Some", prim(7)))
+        val after  = mandateMig(before)
+        val rev    = mandateMig.reverse
+        assertTrue(after.flatMap(rev(_)) == Right(before))
+      },
+      test("reverse of TransformValue applies reversed sub-migration") {
+        val subMig = DynamicMigration(
+          Vector(MigrationAction.ChangeType(DynamicOptic.root, TypeConverter.IntToString))
+        )
+        val tvMig  = DynamicMigration(Vector(MigrationAction.TransformValue(DynamicOptic.root.field("n"), subMig)))
+        val before = record("n" -> prim(42))
+        val after  = tvMig(before)
+        val rev    = tvMig.reverse
+        assertTrue(after.flatMap(rev(_)) == Right(before))
+      },
+      test("reverse of TransformElements applies reversed sub-migration") {
+        val subMig =
+          DynamicMigration(Vector(MigrationAction.ChangeType(DynamicOptic.root, TypeConverter.IntToString)))
+        val teMig = DynamicMigration(
+          Vector(MigrationAction.TransformElements(DynamicOptic.root, subMig))
+        )
+        val before =
+          DynamicValue.Sequence(zio.blocks.chunk.Chunk(prim(1), prim(2)))
+        val after = teMig(before)
+        val rev   = teMig.reverse
+        assertTrue(after.flatMap(rev(_)) == Right(before))
+      },
+      test("reverse of TransformCase applies reversed sub-actions") {
+        val caseAt = DynamicOptic.root.caseOf("Foo")
+        val tMig   = DynamicMigration(
+          Vector(
+            MigrationAction.TransformCase(
+              caseAt,
+              Vector(MigrationAction.AddField(DynamicOptic.root.field("x"), prim(0)))
+            )
+          )
+        )
+        val before = DynamicValue.Variant("Foo", record("a" -> primS("v")))
+        val after  = tMig(before)
+        val rev    = tMig.reverse
+        // The reverse drops the "x" field
+        assertTrue(after.flatMap(rev(_)) == Right(before))
+      },
+      test("reverse of TransformKeys applies reversed sub-migration") {
+        val subMig =
+          DynamicMigration(Vector(MigrationAction.ChangeType(DynamicOptic.root, TypeConverter.IntToString)))
+        val tkMig  = DynamicMigration(Vector(MigrationAction.TransformKeys(DynamicOptic.root, subMig)))
+        val before = DynamicValue.Map(zio.blocks.chunk.Chunk(prim(1) -> primS("a")))
+        val after  = tkMig(before)
+        val rev    = tkMig.reverse
+        assertTrue(after.flatMap(rev(_)) == Right(before))
+      },
+      test("reverse of TransformValues applies reversed sub-migration") {
+        val subMig =
+          DynamicMigration(Vector(MigrationAction.ChangeType(DynamicOptic.root, TypeConverter.IntToString)))
+        val tvMig  = DynamicMigration(Vector(MigrationAction.TransformValues(DynamicOptic.root, subMig)))
+        val before = DynamicValue.Map(zio.blocks.chunk.Chunk(primS("k") -> prim(1)))
+        val after  = tvMig(before)
+        val rev    = tvMig.reverse
+        assertTrue(after.flatMap(rev(_)) == Right(before))
       }
     ),
 
@@ -118,8 +205,8 @@ object MigrationLawsSpec extends SchemaBaseSpec {
       test("Migration.identity leaves typed value unchanged") {
         case class Foo(x: Int)
         implicit val fooSchema: Schema[Foo] = Schema.derived
-        val m     = Migration.identity[Foo]
-        val input = Foo(42)
+        val m                               = Migration.identity[Foo]
+        val input                           = Foo(42)
         assertTrue(m(input) == Right(input))
       }
     )

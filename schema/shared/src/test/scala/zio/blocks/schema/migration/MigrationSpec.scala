@@ -14,18 +14,19 @@ object MigrationSpec extends SchemaBaseSpec {
   implicit val personV3Schema: Schema[PersonV3] = Schema.derived
 
   private val v1ToV2: Migration[PersonV1, PersonV2] =
-    Migration.builder[PersonV1, PersonV2]
+    Migration
+      .builder[PersonV1, PersonV2]
       .changeType(DynamicOptic.root.field("age"), TypeConverter.IntToString)
       .addField(DynamicOptic.root.field("active"), DynamicValue.Primitive(PrimitiveValue.Boolean(true)))
       .build
 
   private val v2ToV3: Migration[PersonV2, PersonV3] =
-    Migration.builder[PersonV2, PersonV3]
+    Migration
+      .builder[PersonV2, PersonV3]
       .rename(DynamicOptic.root.field("name"), "firstName")
       .build
 
   def spec: Spec[Any, Any] = suite("MigrationSpec")(
-
     suite("apply")(
       test("migrates PersonV1 to PersonV2") {
         val input    = PersonV1("Alice", 30)
@@ -55,7 +56,8 @@ object MigrationSpec extends SchemaBaseSpec {
         case class StrBox(n: String)
         implicit val numSchema: Schema[NumBox] = Schema.derived
         implicit val strSchema: Schema[StrBox] = Schema.derived
-        val forward  = Migration.builder[NumBox, StrBox]
+        val forward                            = Migration
+          .builder[NumBox, StrBox]
           .changeType(DynamicOptic.root.field("n"), TypeConverter.IntToString)
           .build
         val rev      = forward.reverse
@@ -75,7 +77,8 @@ object MigrationSpec extends SchemaBaseSpec {
 
     suite("builder")(
       test("builder.build produces correct migration") {
-        val m = Migration.builder[PersonV1, PersonV1]
+        val m = Migration
+          .builder[PersonV1, PersonV1]
           .changeType(DynamicOptic.root.field("age"), TypeConverter.IntToString)
           .changeType(DynamicOptic.root.field("age"), TypeConverter.StringToInt)
           .build

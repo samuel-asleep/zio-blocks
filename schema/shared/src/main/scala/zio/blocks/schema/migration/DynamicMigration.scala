@@ -7,8 +7,8 @@ import zio.blocks.schema.binding.RegisterOffset.RegisterOffset
 import zio.blocks.typeid.TypeId
 
 /**
- * An untyped, serializable migration that operates on [[DynamicValue]] instances by
- * applying a sequence of [[MigrationAction]] steps.
+ * An untyped, serializable migration that operates on [[DynamicValue]]
+ * instances by applying a sequence of [[MigrationAction]] steps.
  *
  * {{{
  * // Rename field "name" to "fullName" and add a new "active" field
@@ -30,13 +30,14 @@ import zio.blocks.typeid.TypeId
  * val combined = migration ++ migration.reverse
  * }}}
  *
- * @param actions the ordered list of actions to apply
+ * @param actions
+ *   the ordered list of actions to apply
  */
 final case class DynamicMigration(actions: Vector[MigrationAction]) {
 
   /**
-   * Applies this migration to a [[DynamicValue]], returning either the migrated value
-   * or a [[SchemaError]] if any action fails.
+   * Applies this migration to a [[DynamicValue]], returning either the migrated
+   * value or a [[SchemaError]] if any action fails.
    */
   def apply(value: DynamicValue): Either[SchemaError, DynamicValue] = {
     var current = value
@@ -52,10 +53,16 @@ final case class DynamicMigration(actions: Vector[MigrationAction]) {
     new Right(current)
   }
 
-  /** Composes two migrations sequentially: applies this migration first, then `that`. */
+  /**
+   * Composes two migrations sequentially: applies this migration first, then
+   * `that`.
+   */
   def ++(that: DynamicMigration): DynamicMigration = DynamicMigration(this.actions ++ that.actions)
 
-  /** Returns a migration that undoes this migration by reversing each action in reverse order. */
+  /**
+   * Returns a migration that undoes this migration by reversing each action in
+   * reverse order.
+   */
   def reverse: DynamicMigration = DynamicMigration(actions.reverse.map(_.reverse))
 
   /** Returns true if this migration has no actions. */
@@ -151,8 +158,8 @@ object DynamicMigration {
       else
         nodes.last match {
           case DynamicOptic.Node.Case(caseName) =>
-            val parentPath    = new DynamicOptic(nodes.dropRight(1))
-            val subMigration  = DynamicMigration(caseActions)
+            val parentPath   = new DynamicOptic(nodes.dropRight(1))
+            val subMigration = DynamicMigration(caseActions)
             current.get(parentPath).one.flatMap {
               case DynamicValue.Variant(cn, caseValue) if cn == caseName =>
                 subMigration(caseValue).flatMap { newCaseValue =>
@@ -169,9 +176,9 @@ object DynamicMigration {
     case MigrationAction.TransformElements(at, transform) =>
       current.get(at).one.flatMap {
         case DynamicValue.Sequence(elements) =>
-          val builder = Chunk.newBuilder[DynamicValue]
+          val builder          = Chunk.newBuilder[DynamicValue]
           var err: SchemaError = null
-          val iter = elements.iterator
+          val iter             = elements.iterator
           while (err == null && iter.hasNext) {
             transform(iter.next()) match {
               case Right(v) => builder += v
@@ -187,9 +194,9 @@ object DynamicMigration {
     case MigrationAction.TransformKeys(at, transform) =>
       current.get(at).one.flatMap {
         case DynamicValue.Map(entries) =>
-          val builder = Chunk.newBuilder[(DynamicValue, DynamicValue)]
+          val builder          = Chunk.newBuilder[(DynamicValue, DynamicValue)]
           var err: SchemaError = null
-          val iter = entries.iterator
+          val iter             = entries.iterator
           while (err == null && iter.hasNext) {
             val (k, v) = iter.next()
             transform(k) match {
@@ -206,9 +213,9 @@ object DynamicMigration {
     case MigrationAction.TransformValues(at, transform) =>
       current.get(at).one.flatMap {
         case DynamicValue.Map(entries) =>
-          val builder = Chunk.newBuilder[(DynamicValue, DynamicValue)]
+          val builder          = Chunk.newBuilder[(DynamicValue, DynamicValue)]
           var err: SchemaError = null
-          val iter = entries.iterator
+          val iter             = entries.iterator
           while (err == null && iter.hasNext) {
             val (k, v) = iter.next()
             transform(v) match {
@@ -231,12 +238,12 @@ object DynamicMigration {
       typeId = TypeId.of[DynamicMigration],
       recordBinding = new Binding.Record(
         constructor = new Constructor[DynamicMigration] {
-          def usedRegisters: RegisterOffset                     = RegisterOffset(objects = 1)
+          def usedRegisters: RegisterOffset                                      = RegisterOffset(objects = 1)
           def construct(in: Registers, offset: RegisterOffset): DynamicMigration =
             new DynamicMigration(in.getObject(offset).asInstanceOf[Vector[MigrationAction]])
         },
         deconstructor = new Deconstructor[DynamicMigration] {
-          def usedRegisters: RegisterOffset                                          = RegisterOffset(objects = 1)
+          def usedRegisters: RegisterOffset                                                   = RegisterOffset(objects = 1)
           def deconstruct(out: Registers, offset: RegisterOffset, in: DynamicMigration): Unit =
             out.setObject(offset, in.actions)
         }

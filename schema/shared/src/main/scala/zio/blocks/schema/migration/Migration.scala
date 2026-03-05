@@ -28,11 +28,16 @@ import zio.blocks.schema._
  * val reverse: Migration[PersonV2, PersonV1] = migration.reverse
  * }}}
  *
- * @param dynamicMigration the underlying untyped migration
- * @param sourceSchema the schema for the source type `A`
- * @param targetSchema the schema for the target type `B`
- * @tparam A source type
- * @tparam B target type
+ * @param dynamicMigration
+ *   the underlying untyped migration
+ * @param sourceSchema
+ *   the schema for the source type `A`
+ * @param targetSchema
+ *   the schema for the target type `B`
+ * @tparam A
+ *   source type
+ * @tparam B
+ *   target type
  */
 final case class Migration[A, B](
   dynamicMigration: DynamicMigration,
@@ -44,10 +49,13 @@ final case class Migration[A, B](
    * Applies this migration to a value of type `A`, converting it to type `B`.
    *
    * The value is first converted to a [[DynamicValue]] using `sourceSchema`,
-   * the migration is then applied, and the result is decoded using `targetSchema`.
+   * the migration is then applied, and the result is decoded using
+   * `targetSchema`.
    *
-   * @param value the source value to migrate
-   * @return the migrated value or a [[SchemaError]]
+   * @param value
+   *   the source value to migrate
+   * @return
+   *   the migrated value or a [[SchemaError]]
    */
   def apply(value: A): Either[SchemaError, B] =
     dynamicMigration(sourceSchema.toDynamicValue(value))
@@ -56,7 +64,8 @@ final case class Migration[A, B](
   /**
    * Composes this migration with `that`, yielding a migration from `A` to `C`.
    *
-   * @tparam C the final target type
+   * @tparam C
+   *   the final target type
    */
   def ++[C](that: Migration[B, C]): Migration[A, C] =
     Migration(dynamicMigration ++ that.dynamicMigration, sourceSchema, that.targetSchema)
@@ -72,15 +81,18 @@ final case class Migration[A, B](
 object Migration {
 
   /**
-   * Creates an identity migration for type `A` that leaves every value unchanged.
+   * Creates an identity migration for type `A` that leaves every value
+   * unchanged.
    *
-   * @param schema the schema for type `A`
+   * @param schema
+   *   the schema for type `A`
    */
   def identity[A](implicit schema: Schema[A]): Migration[A, A] =
     Migration(DynamicMigration.identity, schema, schema)
 
   /**
-   * Returns a [[MigrationBuilder]] for constructing a migration from `A` to `B`.
+   * Returns a [[MigrationBuilder]] for constructing a migration from `A` to
+   * `B`.
    *
    * {{{
    * val m = Migration.builder[PersonV1, PersonV2]
@@ -97,8 +109,10 @@ object Migration {
    * }
    * }}}
    *
-   * @param sourceSchema the schema for the source type `A`
-   * @param targetSchema the schema for the target type `B`
+   * @param sourceSchema
+   *   the schema for the source type `A`
+   * @param targetSchema
+   *   the schema for the target type `B`
    */
   def builder[A, B](implicit sourceSchema: Schema[A], targetSchema: Schema[B]): MigrationBuilder[A, B] =
     new MigrationBuilder[A, B](Vector.empty, sourceSchema, targetSchema)
