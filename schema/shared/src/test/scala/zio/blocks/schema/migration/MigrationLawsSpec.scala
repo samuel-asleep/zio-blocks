@@ -7,7 +7,7 @@ import zio.test._
 /**
  * Laws for [[DynamicMigration]] and [[Migration]].
  *
- * Verifies: identity, composition associativity, reverse round-trip.
+ * Verifies: identity, associativity of composition, reverse round-trip.
  */
 object MigrationLawsSpec extends SchemaBaseSpec {
 

@@ -20,6 +20,7 @@ sealed trait TypeConverter {
 }
 
 object TypeConverter {
+  /** Converts an `Int` to its decimal `String` representation. */
   case object IntToString extends TypeConverter {
     def apply(v: PrimitiveValue): Either[SchemaError, PrimitiveValue] = v match {
       case PrimitiveValue.Int(n) => Right(PrimitiveValue.String(n.toString))
@@ -28,6 +29,7 @@ object TypeConverter {
     def reverse: TypeConverter = StringToInt
   }
 
+  /** Parses a `String` as an `Int`. Fails if the string is not a valid integer. */
   case object StringToInt extends TypeConverter {
     def apply(v: PrimitiveValue): Either[SchemaError, PrimitiveValue] = v match {
       case PrimitiveValue.String(s) =>
@@ -40,6 +42,7 @@ object TypeConverter {
     def reverse: TypeConverter = IntToString
   }
 
+  /** Converts a `Long` to its decimal `String` representation. */
   case object LongToString extends TypeConverter {
     def apply(v: PrimitiveValue): Either[SchemaError, PrimitiveValue] = v match {
       case PrimitiveValue.Long(n) => Right(PrimitiveValue.String(n.toString))
@@ -48,6 +51,7 @@ object TypeConverter {
     def reverse: TypeConverter = StringToLong
   }
 
+  /** Parses a `String` as a `Long`. Fails if the string is not a valid long integer. */
   case object StringToLong extends TypeConverter {
     def apply(v: PrimitiveValue): Either[SchemaError, PrimitiveValue] = v match {
       case PrimitiveValue.String(s) =>
@@ -60,6 +64,7 @@ object TypeConverter {
     def reverse: TypeConverter = LongToString
   }
 
+  /** Widens an `Int` to a `Long`. Always succeeds. */
   case object IntToLong extends TypeConverter {
     def apply(v: PrimitiveValue): Either[SchemaError, PrimitiveValue] = v match {
       case PrimitiveValue.Int(n) => Right(PrimitiveValue.Long(n.toLong))
@@ -68,6 +73,7 @@ object TypeConverter {
     def reverse: TypeConverter = LongToInt
   }
 
+  /** Narrows a `Long` to an `Int`. Truncates on overflow. */
   case object LongToInt extends TypeConverter {
     def apply(v: PrimitiveValue): Either[SchemaError, PrimitiveValue] = v match {
       case PrimitiveValue.Long(n) => Right(PrimitiveValue.Int(n.toInt))
@@ -76,6 +82,7 @@ object TypeConverter {
     def reverse: TypeConverter = IntToLong
   }
 
+  /** Converts a `Double` to its `String` representation. */
   case object DoubleToString extends TypeConverter {
     def apply(v: PrimitiveValue): Either[SchemaError, PrimitiveValue] = v match {
       case PrimitiveValue.Double(n) => Right(PrimitiveValue.String(n.toString))
@@ -84,6 +91,7 @@ object TypeConverter {
     def reverse: TypeConverter = StringToDouble
   }
 
+  /** Parses a `String` as a `Double`. Fails if the string is not a valid double. */
   case object StringToDouble extends TypeConverter {
     def apply(v: PrimitiveValue): Either[SchemaError, PrimitiveValue] = v match {
       case PrimitiveValue.String(s) =>
@@ -96,6 +104,7 @@ object TypeConverter {
     def reverse: TypeConverter = DoubleToString
   }
 
+  /** Widens a `Float` to a `Double`. Always succeeds. */
   case object FloatToDouble extends TypeConverter {
     def apply(v: PrimitiveValue): Either[SchemaError, PrimitiveValue] = v match {
       case PrimitiveValue.Float(n) => Right(PrimitiveValue.Double(n.toDouble))
@@ -104,6 +113,7 @@ object TypeConverter {
     def reverse: TypeConverter = DoubleToFloat
   }
 
+  /** Narrows a `Double` to a `Float`. May lose precision. */
   case object DoubleToFloat extends TypeConverter {
     def apply(v: PrimitiveValue): Either[SchemaError, PrimitiveValue] = v match {
       case PrimitiveValue.Double(n) => Right(PrimitiveValue.Float(n.toFloat))
@@ -112,6 +122,7 @@ object TypeConverter {
     def reverse: TypeConverter = FloatToDouble
   }
 
+  /** Converts a `Boolean` to its `String` representation (`"true"` or `"false"`). */
   case object BoolToString extends TypeConverter {
     def apply(v: PrimitiveValue): Either[SchemaError, PrimitiveValue] = v match {
       case PrimitiveValue.Boolean(b) => Right(PrimitiveValue.String(b.toString))
@@ -120,6 +131,7 @@ object TypeConverter {
     def reverse: TypeConverter = StringToBool
   }
 
+  /** Parses a `String` as a `Boolean`. Accepts `"true"` / `"false"` (case-insensitive). Fails otherwise. */
   case object StringToBool extends TypeConverter {
     def apply(v: PrimitiveValue): Either[SchemaError, PrimitiveValue] = v match {
       case PrimitiveValue.String(s) =>
