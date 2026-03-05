@@ -9,6 +9,15 @@ import zio.blocks.typeid.TypeId
 /**
  * A converter between two primitive types. Used in [[MigrationAction.ChangeType]]
  * to change the primitive type of a value at a given path.
+ *
+ * @example
+ * {{{
+ * val result = TypeConverter.IntToString(PrimitiveValue.Int(42))
+ * // Right(PrimitiveValue.String("42"))
+ *
+ * val back = TypeConverter.IntToString.reverse(PrimitiveValue.String("42"))
+ * // Right(PrimitiveValue.Int(42))
+ * }}}
  */
 sealed trait TypeConverter {
 

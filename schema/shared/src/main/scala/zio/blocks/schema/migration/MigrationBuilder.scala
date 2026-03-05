@@ -8,6 +8,24 @@ import zio.blocks.schema._
  *
  * Obtain an instance via [[Migration.builder]].
  *
+ * {{{
+ * // Rename "name" -> "fullName", add "active" field with default false,
+ * // and convert the "code" field from Int to String
+ * val m = Migration.builder[PersonV1, PersonV2]
+ *   .rename(DynamicOptic.root.field("name"), "fullName")
+ *   .addField(
+ *     DynamicOptic.root.field("active"),
+ *     DynamicValue.Primitive(PrimitiveValue.Boolean(false))
+ *   )
+ *   .changeType(DynamicOptic.root.field("code"), TypeConverter.IntToString)
+ *   .build
+ *
+ * m(PersonV1("Alice", 42)) match {
+ *   case Right(v2) => // PersonV2("Alice", active = false, code = "42")
+ *   case Left(err) => // SchemaError
+ * }
+ * }}}
+ *
  * @tparam A the source type
  * @tparam B the target type
  */
@@ -19,6 +37,13 @@ final class MigrationBuilder[A, B] private[migration] (
 
   /**
    * Adds an [[MigrationAction.AddField]] step that inserts a field at `at` with `default`.
+   *
+   * {{{
+   * builder.addField(
+   *   DynamicOptic.root.field("score"),
+   *   DynamicValue.Primitive(PrimitiveValue.Int(0))
+   * )
+   * }}}
    *
    * @param at      path to the new field (must end in a Field node)
    * @param default value to insert when the field is absent
@@ -38,6 +63,14 @@ final class MigrationBuilder[A, B] private[migration] (
   /**
    * Adds a [[MigrationAction.Rename]] step. The path `at` must end in a Field node
    * whose name is the original field name.
+   *
+   * {{{
+   * // Rename top-level field "firstName" to "fullName"
+   * builder.rename(DynamicOptic.root.field("firstName"), "fullName")
+   *
+   * // Rename nested field "address.zip" to "address.postalCode"
+   * builder.rename(DynamicOptic.root.field("address").field("zip"), "postalCode")
+   * }}}
    *
    * @param at path ending in the original Field node
    * @param to the new field name

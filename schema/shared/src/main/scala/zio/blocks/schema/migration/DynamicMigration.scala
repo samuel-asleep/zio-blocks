@@ -10,6 +10,26 @@ import zio.blocks.typeid.TypeId
  * An untyped, serializable migration that operates on [[DynamicValue]] instances by
  * applying a sequence of [[MigrationAction]] steps.
  *
+ * {{{
+ * // Rename field "name" to "fullName" and add a new "active" field
+ * val migration = DynamicMigration(Vector(
+ *   MigrationAction.Rename(DynamicOptic.root.field("name"), "fullName"),
+ *   MigrationAction.AddField(
+ *     DynamicOptic.root.field("active"),
+ *     DynamicValue.Primitive(PrimitiveValue.Boolean(true))
+ *   )
+ * ))
+ *
+ * val source = DynamicValue.Record(Chunk("name" -> DynamicValue.Primitive(PrimitiveValue.String("Alice"))))
+ * migration(source) match {
+ *   case Right(result) => // DynamicValue.Record with "fullName" and "active" fields
+ *   case Left(err)     => // SchemaError describing what failed
+ * }
+ *
+ * // Compose two migrations
+ * val combined = migration ++ migration.reverse
+ * }}}
+ *
  * @param actions the ordered list of actions to apply
  */
 final case class DynamicMigration(actions: Vector[MigrationAction]) {
